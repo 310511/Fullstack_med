@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { QRScanner } from "./QRScanner";
+import { SimpleQRScanner } from "./SimpleQRScanner";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1394,9 +1395,7 @@ const RFIDDashboard: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <QRScanner
-                      isScanning={isScanningQR}
-                      onScanningChange={setIsScanningQR}
+                    <SimpleQRScanner
                       onQRCodeScanned={handleQRCodeScanned}
                       onScanError={handleQRScanError}
                     />
