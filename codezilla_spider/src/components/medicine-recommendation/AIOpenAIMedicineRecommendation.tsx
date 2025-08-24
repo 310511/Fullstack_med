@@ -49,7 +49,7 @@ import {
   Bot,
   User
 } from 'lucide-react';
-import { openAIService, AIMedicineRecommendationResponse } from '@/services/openaiService';
+import { geminiService, AIMedicineRecommendationResponse } from '@/services/geminiService';
 
 interface AIMedicineRecommendation {
   symptom_analysis: string;
@@ -95,7 +95,7 @@ export function AIOpenAIMedicineRecommendation() {
         });
       }, 200);
 
-      const response = await openAIService.getMedicineRecommendations(symptoms, 'user-' + Date.now());
+              const response = await geminiService.getMedicineRecommendations(symptoms, 'user-' + Date.now());
       
       clearInterval(progressInterval);
       setAnalysisProgress(100);

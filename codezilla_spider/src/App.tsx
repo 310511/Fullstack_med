@@ -17,7 +17,7 @@ import { ProfileSetup } from "./pages/ProfileSetup";
 import { Dashboard } from "./pages/Dashboard";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { AIOpenAIMedicineRecommendation } from "@/components/medicine-recommendation/AIOpenAIMedicineRecommendation";
+import { AIGeminiMedicineRecommendation } from "@/components/medicine-recommendation/AIGeminiMedicineRecommendation";
 import { InfiniteMemoryDashboard } from "@/components/infinite-memory/InfiniteMemoryDashboard";
 import { EnhancedMLPredictionsDashboard } from "@/components/ml-predictions/EnhancedMLPredictionsDashboard";
 import InventoryDashboard from "@/components/inventory/InventoryDashboard";
@@ -55,7 +55,7 @@ const AppContent = () => {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/profile-setup" element={<ProfileSetup />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/ai-medicine-recommendation" element={<AIOpenAIMedicineRecommendation />} />
+        <Route path="/ai-medicine-recommendation" element={<AIGeminiMedicineRecommendation />} />
         <Route path="/infinite-memory" element={<InfiniteMemoryDashboard />} />
         <Route path="/ml-predictions" element={<EnhancedMLPredictionsDashboard />} />
         <Route path="/inventory" element={<InventoryDashboard />} />

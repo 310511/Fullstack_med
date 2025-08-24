@@ -50,8 +50,9 @@ Add these environment variables in Render:
 
 ### Step 2: Environment Variables
 
-Add this environment variable in Vercel:
+Add these environment variables in Vercel:
 - `VITE_API_URL`: `https://spider-medical-backend.onrender.com` (your Render backend URL)
+- `VITE_GEMINI_API_KEY`: `your_gemini_api_key` (get from Google AI Studio)
 
 ### Step 3: Deploy
 

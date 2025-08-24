@@ -18,7 +18,7 @@ import {
   AlertCircle,
   Sparkles
 } from "lucide-react";
-import { openAIService, AIHealthConsultationResponse } from '@/services/openaiService';
+import { geminiService, AIHealthConsultationResponse } from '@/services/geminiService';
 
 interface Message {
   id: string;
@@ -131,7 +131,7 @@ const EchoMedEmergencyChat = () => {
               content: msg.content
             }));
           
-          const aiResponse = await openAIService.getHealthConsultation(
+          const aiResponse = await geminiService.getHealthConsultation(
             inputValue,
             'user-' + Date.now(),
             conversationHistory
