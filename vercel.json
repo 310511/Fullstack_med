@@ -18,6 +18,6 @@
     "VITE_MONGO_URI": "mongodb://indian22162:password@localhost:27017/",
     "VITE_REDIS_HOST": "localhost",
     "VITE_REDIS_PORT": "6379",
-    "VITE_REDIS_PASSWORD": "password"
-  }
+        "VITE_REDIS_PASSWORD": "password"
+}
 }
