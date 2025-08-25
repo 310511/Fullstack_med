@@ -23,7 +23,7 @@ VITE_FIREBASE_APP_ID=1:123027023076:web:b071a3a77d48beee67b8f1
 VITE_FIREBASE_MEASUREMENT_ID=G-EDSGGHW2VG
 
 # ElevenLabs API Configuration
-ELEVENLABS_API_KEY=dummy
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
 
 # Session Configuration
 SESSION_SECRET=spider1-flask-secret-key
