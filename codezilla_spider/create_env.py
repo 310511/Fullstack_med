@@ -44,6 +44,19 @@ BACKEND_PORT=8000
 
 # Frontend Configuration
 VITE_API_URL=https://fullstack-med-2.onrender.com
+
+# Database Configuration
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=medchain
+POSTGRES_USER=indian22162
+POSTGRES_PASSWORD=password
+
+MONGO_URI=mongodb://indian22162:password@localhost:27017/
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=password
 """
     
     env_file_path = ".env"

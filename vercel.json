@@ -9,6 +9,15 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://fullstack-med-2.onrender.com"
+    "VITE_API_URL": "https://fullstack-med-2.onrender.com",
+    "VITE_POSTGRES_HOST": "localhost",
+    "VITE_POSTGRES_PORT": "5432",
+    "VITE_POSTGRES_DB": "medchain",
+    "VITE_POSTGRES_USER": "indian22162",
+    "VITE_POSTGRES_PASSWORD": "password",
+    "VITE_MONGO_URI": "mongodb://indian22162:password@localhost:27017/",
+    "VITE_REDIS_HOST": "localhost",
+    "VITE_REDIS_PORT": "6379",
+    "VITE_REDIS_PASSWORD": "password"
   }
 }
