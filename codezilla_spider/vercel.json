@@ -9,6 +9,6 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://spider-medical-backend.onrender.com"
+    "VITE_API_URL": "https://fullstack-med-2.onrender.com"
   }
 } 
