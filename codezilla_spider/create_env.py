@@ -41,6 +41,9 @@ NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
 # Backend Configuration
 BACKEND_HOST=localhost
 BACKEND_PORT=8000
+
+# Frontend Configuration
+VITE_API_URL=https://fullstack-med-2.onrender.com
 """
     
     env_file_path = ".env"

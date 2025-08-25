@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: fullstack-med-frontend
+    env: static
+    buildCommand: cd codezilla_spider && npm install && npm run build
+    staticPublishPath: ./codezilla_spider/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://fullstack-med-2.onrender.com
