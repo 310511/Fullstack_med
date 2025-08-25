@@ -1,0 +1,14 @@
+{
+  "buildCommand": "cd codezilla_spider && npm install && npm run build",
+  "outputDirectory": "codezilla_spider/dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_API_URL": "https://fullstack-med-2.onrender.com"
+  }
+}
