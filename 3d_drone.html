@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Drone Visualization & Control</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden; 
+            color: white; 
+        }
+        #container { position: relative; width: 100vw; height: 100vh; }
+        #scene-container { width: 100%; height: 100%; }
+        #controls-panel {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(0, 0, 0, 0.8); padding: 20px;
+            border-radius: 15px; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2); min-width: 300px;
+        }
+        #status-panel {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0, 0, 0, 0.8); padding: 20px;
+            border-radius: 15px; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2); min-width: 250px;
+        }
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #4CAF50; }
+        .control-group input[type="range"] { width: 100%; margin: 5px 0; }
+        .control-group input[type="number"] { width: 60px; padding: 5px; border: none; border-radius: 5px; background: rgba(255, 255, 255, 0.1); color: white; margin-left: 10px; }
+        .button-group { display: flex; gap: 10px; margin-top: 10px; }
+        button {
+            padding: 10px 15px; border: none; border-radius: 8px;
+            background: linear-gradient(45deg, #4CAF50, #45a049); color: white;
+            cursor: pointer; font-weight: bold; transition: all 0.3s ease; flex: 1;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4); }
+        button.danger { background: linear-gradient(45deg, #f44336, #d32f2f); }
+        .status-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .status-label { color: #4CAF50; font-weight: bold; }
+        .status-value { color: #fff; }
+        .camera-controls {
+            position: absolute; bottom: 20px; left: 20px;
+            background: rgba(0, 0, 0, 0.8); padding: 15px;
+            border-radius: 15px; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .camera-controls button { margin: 5px; padding: 8px 12px; font-size: 12px; }
+        #instructions {
+            position: absolute; bottom: 20px; right: 20px;
+            background: rgba(0, 0, 0, 0.8); padding: 15px;
+            border-radius: 15px; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2); max-width: 300px;
+        }
+        #instructions h3 { color: #4CAF50; margin-bottom: 10px; }
+        #instructions ul { list-style: none; font-size: 12px; }
+        #instructions li { margin-bottom: 5px; padding-left: 15px; position: relative; }
+        #instructions li:before { content: "•"; color: #4CAF50; position: absolute; left: 0; }
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: white; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="scene-container"></div>
+        
+        <div id="controls-panel">
+            <h2>🚁 Drone Controls</h2>
+            
+            <div class="control-group">
+                <label>Altitude (Z)</label>
+                <input type="range" id="altitude" min="0" max="50" value="10" step="0.5">
+                <input type="number" id="altitude-value" value="10" step="0.5">
+            </div>
+            
+            <div class="control-group">
+                <label>Forward/Backward (X)</label>
+                <input type="range" id="forward" min="-20" max="20" value="0" step="0.5">
+                <input type="number" id="forward-value" value="0" step="0.5">
+            </div>
+            
+            <div class="control-group">
+                <label>Left/Right (Y)</label>
+                <input type="range" id="lateral" min="-20" max="20" value="0" step="0.5">
+                <input type="number" id="lateral-value" value="0" step="0.5">
+            </div>
+            
+            <div class="control-group">
+                <label>Rotation (Yaw)</label>
+                <input type="range" id="rotation" min="-180" max="180" value="0" step="5">
+                <input type="number" id="rotation-value" value="0" step="5">
+            </div>
+            
+            <div class="control-group">
+                <label>Pitch</label>
+                <input type="range" id="pitch" min="-45" max="45" value="0" step="2">
+                <input type="number" id="pitch-value" value="0" step="2">
+            </div>
+            
+            <div class="control-group">
+                <label>Roll</label>
+                <input type="range" id="roll" min="-45" max="45" value="0" step="2">
+                <input type="number" id="roll-value" value="0" step="2">
+            </div>
+            
+            <div class="button-group">
+                <button id="reset-btn">Reset</button>
+                <button id="auto-fly-btn">Auto Fly</button>
+                <button id="emergency-btn" class="danger">Emergency Stop</button>
+            </div>
+        </div>
+        
+        <div id="status-panel">
+            <h2>📊 Status</h2>
+            <div class="status-item">
+                <span class="status-label">Position:</span>
+                <span class="status-value" id="position-status">0, 0, 10</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Rotation:</span>
+                <span class="status-value" id="rotation-status">0°</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Speed:</span>
+                <span class="status-value" id="speed-status">0 m/s</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Battery:</span>
+                <span class="status-value" id="battery-status">85%</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Signal:</span>
+                <span class="status-value" id="signal-status">Strong</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Mode:</span>
+                <span class="status-value" id="mode-status">Manual</span>
+            </div>
+        </div>
+        
+        <div class="camera-controls">
+            <h3>📷 Camera</h3>
+            <button id="top-view">Top View</button>
+            <button id="side-view">Side View</button>
+            <button id="follow-view">Follow Drone</button>
+            <button id="orbit-view">Orbit View</button>
+        </div>
+        
+        <div id="instructions">
+            <h3>🎮 Controls</h3>
+            <ul>
+                <li>WASD: Move drone</li>
+                <li>Q/E: Rotate drone</li>
+                <li>Space: Increase altitude</li>
+                <li>Shift: Decrease altitude</li>
+                <li>Mouse: Rotate camera</li>
+                <li>Scroll: Zoom in/out</li>
+            </ul>
+        </div>
+        
+        <div class="loading" id="loading">Loading 3D Scene...</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        class DroneSimulation {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.controls = null;
+                this.drone = null;
+                this.obstacles = [];
+                this.autoFlyMode = false;
+                this.emergencyStop = false;
+                
+                this.dronePosition = { x: 0, y: 0, z: 10 };
+                this.droneRotation = { x: 0, y: 0, z: 0 };
+                this.droneSpeed = 0;
+                this.batteryLevel = 85;
+                this.signalStrength = 'Strong';
+                
+                this.init();
+                this.setupEventListeners();
+                this.animate();
+            }
+            
+            init() {
+                // Scene setup
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x87CEEB);
+                this.scene.fog = new THREE.Fog(0x87CEEB, 50, 200);
+                
+                // Camera setup
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.set(20, 20, 20);
+                
+                // Renderer setup
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                document.getElementById('scene-container').appendChild(this.renderer.domElement);
+                
+                // Controls setup
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                
+                this.createLighting();
+                this.createGround();
+                this.createDrone();
+                this.createObstacles();
+                this.createEnvironment();
+                
+                document.getElementById('loading').style.display = 'none';
+            }
+            
+            createLighting() {
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                this.scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(50, 50, 50);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 2048;
+                directionalLight.shadow.mapSize.height = 2048;
+                this.scene.add(directionalLight);
+            }
+            
+            createGround() {
+                const groundGeometry = new THREE.PlaneGeometry(100, 100);
+                const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
+                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+                ground.rotation.x = -Math.PI / 2;
+                ground.receiveShadow = true;
+                this.scene.add(ground);
+                
+                const gridHelper = new THREE.GridHelper(100, 20);
+                gridHelper.position.y = 0.01;
+                this.scene.add(gridHelper);
+            }
+            
+            createDrone() {
+                this.drone = new THREE.Group();
+                
+                // Main body
+                const bodyGeometry = new THREE.BoxGeometry(2, 0.5, 2);
+                const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                body.castShadow = true;
+                this.drone.add(body);
+                
+                // Arms
+                const armGeometry = new THREE.CylinderGeometry(0.1, 0.1, 3);
+                const armMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+                
+                for (let i = 0; i < 4; i++) {
+                    const arm = new THREE.Mesh(armGeometry, armMaterial);
+                    arm.position.set(
+                        (i % 2 === 0 ? 1.5 : -1.5),
+                        0,
+                        (i < 2 ? 1.5 : -1.5)
+                    );
+                    arm.castShadow = true;
+                    this.drone.add(arm);
+                }
+                
+                // Propellers
+                const propellerGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.1);
+                const propellerMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
+                
+                for (let i = 0; i < 4; i++) {
+                    const propeller = new THREE.Mesh(propellerGeometry, propellerMaterial);
+                    propeller.position.set(
+                        (i % 2 === 0 ? 1.5 : -1.5),
+                        0.3,
+                        (i < 2 ? 1.5 : -1.5)
+                    );
+                    propeller.castShadow = true;
+                    this.drone.add(propeller);
+                }
+                
+                this.drone.position.set(this.dronePosition.x, this.dronePosition.y, this.dronePosition.z);
+                this.scene.add(this.drone);
+            }
+            
+            createObstacles() {
+                for (let i = 0; i < 8; i++) {
+                    const geometry = Math.random() > 0.5 ? 
+                        new THREE.BoxGeometry(2 + Math.random() * 3, 3 + Math.random() * 5, 2 + Math.random() * 3) :
+                        new THREE.CylinderGeometry(1 + Math.random() * 2, 1 + Math.random() * 2, 3 + Math.random() * 5);
+                    
+                    const material = new THREE.MeshLambertMaterial({ color: 0xff4444 });
+                    const obstacle = new THREE.Mesh(geometry, material);
+                    obstacle.position.set(
+                        (Math.random() - 0.5) * 40,
+                        obstacle.geometry.parameters.height / 2,
+                        (Math.random() - 0.5) * 40
+                    );
+                    obstacle.castShadow = true;
+                    obstacle.receiveShadow = true;
+                    
+                    this.obstacles.push(obstacle);
+                    this.scene.add(obstacle);
+                }
+            }
+            
+            createEnvironment() {
+                // Skybox
+                const skyGeometry = new THREE.SphereGeometry(150, 32, 32);
+                const skyMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, side: THREE.BackSide });
+                const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+                this.scene.add(sky);
+            }
+            
+            setupEventListeners() {
+                const controls = ['altitude', 'forward', 'lateral', 'rotation', 'pitch', 'roll'];
+                controls.forEach(control => {
+                    const slider = document.getElementById(control);
+                    const value = document.getElementById(control + '-value');
+                    
+                    slider.addEventListener('input', (e) => {
+                        value.value = e.target.value;
+                        this.updateDronePosition();
+                    });
+                    
+                    value.addEventListener('input', (e) => {
+                        slider.value = e.target.value;
+                        this.updateDronePosition();
+                    });
+                });
+                
+                document.getElementById('reset-btn').addEventListener('click', () => this.resetDrone());
+                document.getElementById('auto-fly-btn').addEventListener('click', () => this.toggleAutoFly());
+                document.getElementById('emergency-btn').addEventListener('click', () => this.emergencyStop());
+                
+                document.getElementById('top-view').addEventListener('click', () => this.setCameraView('top'));
+                document.getElementById('side-view').addEventListener('click', () => this.setCameraView('side'));
+                document.getElementById('follow-view').addEventListener('click', () => this.setCameraView('follow'));
+                document.getElementById('orbit-view').addEventListener('click', () => this.setCameraView('orbit'));
+                
+                document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+                window.addEventListener('resize', () => this.onWindowResize());
+            }
+            
+            updateDronePosition() {
+                if (this.emergencyStop) return;
+                
+                const altitude = parseFloat(document.getElementById('altitude').value);
+                const forward = parseFloat(document.getElementById('forward').value);
+                const lateral = parseFloat(document.getElementById('lateral').value);
+                const rotation = parseFloat(document.getElementById('rotation').value);
+                const pitch = parseFloat(document.getElementById('pitch').value);
+                const roll = parseFloat(document.getElementById('roll').value);
+                
+                this.dronePosition = { x: lateral, y: forward, z: altitude };
+                this.droneRotation = { x: pitch, y: rotation, z: roll };
+                
+                this.drone.position.set(this.dronePosition.x, this.dronePosition.y, this.dronePosition.z);
+                this.drone.rotation.set(
+                    THREE.MathUtils.degToRad(this.droneRotation.x),
+                    THREE.MathUtils.degToRad(this.droneRotation.y),
+                    THREE.MathUtils.degToRad(this.droneRotation.z)
+                );
+                
+                this.updateStatus();
+            }
+            
+            updateStatus() {
+                document.getElementById('position-status').textContent = 
+                    `${this.dronePosition.x.toFixed(1)}, ${this.dronePosition.y.toFixed(1)}, ${this.dronePosition.z.toFixed(1)}`;
+                document.getElementById('rotation-status').textContent = 
+                    `${this.droneRotation.y.toFixed(0)}°`;
+                document.getElementById('speed-status').textContent = 
+                    `${this.droneSpeed.toFixed(1)} m/s`;
+                document.getElementById('battery-status').textContent = 
+                    `${this.batteryLevel}%`;
+                document.getElementById('signal-status').textContent = 
+                    this.signalStrength;
+                document.getElementById('mode-status').textContent = 
+                    this.autoFlyMode ? 'Auto Fly' : 'Manual';
+            }
+            
+            resetDrone() {
+                this.emergencyStop = false;
+                this.autoFlyMode = false;
+                
+                const controls = ['altitude', 'forward', 'lateral', 'rotation', 'pitch', 'roll'];
+                const resetValues = [10, 0, 0, 0, 0, 0];
+                
+                controls.forEach((control, index) => {
+                    const slider = document.getElementById(control);
+                    const value = document.getElementById(control + '-value');
+                    slider.value = resetValues[index];
+                    value.value = resetValues[index];
+                });
+                
+                this.updateDronePosition();
+            }
+            
+            toggleAutoFly() {
+                this.autoFlyMode = !this.autoFlyMode;
+                if (this.autoFlyMode) {
+                    this.startAutoFly();
+                }
+            }
+            
+            startAutoFly() {
+                if (!this.autoFlyMode) return;
+                
+                const time = Date.now() * 0.001;
+                const altitude = 15 + Math.sin(time * 0.5) * 5;
+                const forward = Math.sin(time * 0.3) * 10;
+                const lateral = Math.cos(time * 0.3) * 10;
+                const rotation = Math.sin(time * 0.2) * 30;
+                
+                document.getElementById('altitude').value = altitude;
+                document.getElementById('altitude-value').value = altitude;
+                document.getElementById('forward').value = forward;
+                document.getElementById('forward-value').value = forward;
+                document.getElementById('lateral').value = lateral;
+                document.getElementById('lateral-value').value = lateral;
+                document.getElementById('rotation').value = rotation;
+                document.getElementById('rotation-value').value = rotation;
+                
+                this.updateDronePosition();
+                
+                if (this.autoFlyMode) {
+                    requestAnimationFrame(() => this.startAutoFly());
+                }
+            }
+            
+            emergencyStop() {
+                this.emergencyStop = true;
+                this.autoFlyMode = false;
+                this.droneSpeed = 0;
+                this.updateStatus();
+            }
+            
+            setCameraView(view) {
+                switch(view) {
+                    case 'top':
+                        this.camera.position.set(0, 50, 0);
+                        this.camera.lookAt(0, 0, 0);
+                        break;
+                    case 'side':
+                        this.camera.position.set(30, 0, 30);
+                        this.camera.lookAt(0, 0, 0);
+                        break;
+                    case 'follow':
+                        this.camera.position.set(
+                            this.dronePosition.x + 10,
+                            this.dronePosition.y + 5,
+                            this.dronePosition.z + 10
+                        );
+                        this.camera.lookAt(this.dronePosition.x, this.dronePosition.y, this.dronePosition.z);
+                        break;
+                    case 'orbit':
+                        this.camera.position.set(20, 20, 20);
+                        this.controls.target.set(this.dronePosition.x, this.dronePosition.y, this.dronePosition.z);
+                        break;
+                }
+            }
+            
+            handleKeyPress(event) {
+                if (this.emergencyStop) return;
+                
+                const step = 1;
+                const rotationStep = 5;
+                
+                switch(event.key.toLowerCase()) {
+                    case 'w':
+                        document.getElementById('forward').value = parseFloat(document.getElementById('forward').value) + step;
+                        document.getElementById('forward-value').value = document.getElementById('forward').value;
+                        break;
+                    case 's':
+                        document.getElementById('forward').value = parseFloat(document.getElementById('forward').value) - step;
+                        document.getElementById('forward-value').value = document.getElementById('forward').value;
+                        break;
+                    case 'a':
+                        document.getElementById('lateral').value = parseFloat(document.getElementById('lateral').value) - step;
+                        document.getElementById('lateral-value').value = document.getElementById('lateral').value;
+                        break;
+                    case 'd':
+                        document.getElementById('lateral').value = parseFloat(document.getElementById('lateral').value) + step;
+                        document.getElementById('lateral-value').value = document.getElementById('lateral').value;
+                        break;
+                    case 'q':
+                        document.getElementById('rotation').value = parseFloat(document.getElementById('rotation').value) - rotationStep;
+                        document.getElementById('rotation-value').value = document.getElementById('rotation').value;
+                        break;
+                    case 'e':
+                        document.getElementById('rotation').value = parseFloat(document.getElementById('rotation').value) + rotationStep;
+                        document.getElementById('rotation-value').value = document.getElementById('rotation').value;
+                        break;
+                    case ' ':
+                        event.preventDefault();
+                        document.getElementById('altitude').value = parseFloat(document.getElementById('altitude').value) + step;
+                        document.getElementById('altitude-value').value = document.getElementById('altitude').value;
+                        break;
+                    case 'shift':
+                        event.preventDefault();
+                        document.getElementById('altitude').value = parseFloat(document.getElementById('altitude').value) - step;
+                        document.getElementById('altitude-value').value = document.getElementById('altitude').value;
+                        break;
+                }
+                
+                this.updateDronePosition();
+            }
+            
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                this.controls.update();
+                
+                if (this.drone && !this.emergencyStop) {
+                    this.drone.children.forEach((child, index) => {
+                        if (index >= 4 && index < 8) {
+                            child.rotation.y += 0.3;
+                        }
+                    });
+                }
+                
+                if (!this.emergencyStop) {
+                    this.batteryLevel = Math.max(0, this.batteryLevel - 0.01);
+                    if (this.batteryLevel < 20) {
+                        this.signalStrength = 'Weak';
+                    }
+                }
+                
+                const currentPos = this.drone.position;
+                this.droneSpeed = Math.sqrt(
+                    Math.pow(currentPos.x - this.dronePosition.x, 2) +
+                    Math.pow(currentPos.y - this.dronePosition.y, 2) +
+                    Math.pow(currentPos.z - this.dronePosition.z, 2)
+                ) * 10;
+                
+                this.updateStatus();
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+        
+        window.addEventListener('load', () => {
+            new DroneSimulation();
+        });
+    </script>
+</body>
+</html>

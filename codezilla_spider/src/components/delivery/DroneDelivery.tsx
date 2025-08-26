@@ -26,7 +26,8 @@ import {
   Route,
   Target,
   Zap,
-  Shield
+  Shield,
+  Box
 } from 'lucide-react';
 
 interface DroneDeliveryProps {
@@ -65,6 +66,8 @@ export const DroneDelivery: React.FC<DroneDeliveryProps> = ({ className }) => {
   const [drones, setDrones] = useState<Drone[]>([]);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [isSimulationActive, setIsSimulationActive] = useState(false);
+  const [show3DVisualization, setShow3DVisualization] = useState(false);
+  const [backendConnected, setBackendConnected] = useState(false);
 
   // Initialize with sample data
   useEffect(() => {
@@ -150,6 +153,22 @@ export const DroneDelivery: React.FC<DroneDeliveryProps> = ({ className }) => {
     setDeliveries(sampleDeliveries);
   }, []);
 
+  // Connect to backend
+  useEffect(() => {
+    const connectToBackend = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/status');
+        if (response.ok) {
+          setBackendConnected(true);
+          console.log('Connected to drone backend');
+        }
+      } catch (error) {
+        console.log('Backend not available, using local simulation');
+      }
+    };
+    connectToBackend();
+  }, []);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
@@ -172,6 +191,14 @@ export const DroneDelivery: React.FC<DroneDeliveryProps> = ({ className }) => {
 
   const [simulationInterval, setSimulationInterval] = useState<NodeJS.Timeout | null>(null);
   const [is3DModelActive, setIs3DModelActive] = useState(false);
+
+  const launch3DVisualization = () => {
+    setShow3DVisualization(true);
+  };
+
+  const close3DVisualization = () => {
+    setShow3DVisualization(false);
+  };
 
   const startSimulation = () => {
     setIsSimulationActive(true);
@@ -329,7 +356,38 @@ export const DroneDelivery: React.FC<DroneDeliveryProps> = ({ className }) => {
           Drone Delivery System
         </h1>
         <p className="text-muted-foreground">AI-powered medical supply delivery with real-time tracking and monitoring</p>
+        <div className="mt-4">
+          <Button
+            onClick={launch3DVisualization}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Box className="w-4 h-4 mr-2" />
+            Launch 3D Visualization
+          </Button>
+        </div>
       </div>
+
+      {/* 3D Visualization Modal */}
+      {show3DVisualization && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-900 rounded-lg w-11/12 h-5/6 flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold">🚁 3D Drone Visualization</h2>
+              <Button onClick={close3DVisualization} variant="outline">
+                ✕ Close
+              </Button>
+            </div>
+            <div className="flex-1 p-4">
+                             <iframe
+                 src="/drone_dashboard_advanced.html"
+                 className="w-full h-full border-0 rounded"
+                 title="Advanced 3D Drone Visualization"
+                 allowFullScreen
+               />
+            </div>
+          </div>
+        </div>
+      )}
 
              {/* 3D Drone Model with Controls */}
        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
@@ -502,7 +560,7 @@ export const DroneDelivery: React.FC<DroneDeliveryProps> = ({ className }) => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-blue-600">{drones.length}</div>
@@ -523,6 +581,14 @@ export const DroneDelivery: React.FC<DroneDeliveryProps> = ({ className }) => {
                   {deliveries.filter(d => d.status === 'in-flight').length}
                 </div>
                 <p className="text-sm text-muted-foreground">In Flight</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className={`text-2xl font-bold ${backendConnected ? 'text-green-600' : 'text-red-600'}`}>
+                  {backendConnected ? 'Online' : 'Offline'}
+                </div>
+                <p className="text-sm text-muted-foreground">Backend Status</p>
               </CardContent>
             </Card>
           </div>

@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Drone Management Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #scene-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .hud-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            width: 300px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .hud-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00d4ff;
+            text-align: center;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .joystick-container {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            margin: 0 auto;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .joystick-container:hover {
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .joystick-stick {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            background: #00d4ff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-control {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-control::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #00d4ff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .control-value {
+            font-size: 12px;
+            color: #00d4ff;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid #00d4ff;
+            border-radius: 8px;
+            color: #00d4ff;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .action-btn.active {
+            background: #00d4ff;
+            color: #000;
+        }
+
+        .action-btn#regenerateObstaclesBtn {
+            background: rgba(255, 165, 0, 0.2);
+            border-color: #ffa500;
+            color: #ffa500;
+        }
+
+        .action-btn#regenerateObstaclesBtn:hover {
+            background: rgba(255, 165, 0, 0.3);
+            box-shadow: 0 0 15px rgba(255, 165, 0, 0.4);
+        }
+
+        .status-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            width: 280px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .status-value {
+            font-size: 12px;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff00;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.warning {
+            background: #ffaa00;
+        }
+
+        .status-indicator.error {
+            background: #ff0000;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .flight-path {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .path-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .path-item {
+            text-align: center;
+        }
+
+        .path-label {
+            font-size: 10px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .path-value {
+            font-size: 14px;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-top: 3px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #00d4ff;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .collision-alert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 3000;
+            animation: alertPulse 0.5s ease-in-out infinite alternate;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+        }
+
+        @keyframes alertPulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            100% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        .start-marker, .end-marker {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .start-marker {
+            color: #00ff00;
+            border-color: #00ff00;
+        }
+
+        .end-marker {
+            color: #ff0000;
+            border-color: #ff0000;
+            top: 70px;
+        }
+
+        @media (max-width: 768px) {
+            .hud-controls, .status-panel {
+                width: 250px;
+                padding: 15px;
+            }
+            
+            .flight-path {
+                width: 90%;
+                left: 5%;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div class="loading-screen" id="loadingScreen">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Initializing Drone System...</div>
+        </div>
+
+        <div id="scene-container"></div>
+
+        <div class="hud-controls">
+            <div class="hud-title">🚁 Flight Controls</div>
+            
+            <div class="control-group">
+                <div class="control-label">Altitude</div>
+                <div class="control-row">
+                    <input type="range" class="slider-control" id="altitudeSlider" min="0" max="100" value="10">
+                    <span class="control-value" id="altitudeValue">10m</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Forward/Backward</div>
+                <div class="joystick-container" id="forwardJoystick">
+                    <div class="joystick-stick" id="forwardStick"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Lateral Movement</div>
+                <div class="joystick-container" id="lateralJoystick">
+                    <div class="joystick-stick" id="lateralStick"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label">Rotation</div>
+                <div class="control-row">
+                    <input type="range" class="slider-control" id="rotationSlider" min="-180" max="180" value="0">
+                    <span class="control-value" id="rotationValue">0°</span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="action-btn" id="autoFlyBtn">Auto Fly</button>
+                <button class="action-btn" id="resetBtn">Reset</button>
+                <button class="action-btn" id="emergencyBtn">Emergency</button>
+                <button class="action-btn" id="regenerateObstaclesBtn">🔄 New Obstacles</button>
+            </div>
+        </div>
+
+        <div class="status-panel">
+            <div class="status-title">📊 System Status</div>
+            
+            <div class="status-item">
+                <span class="status-label">Drone Status</span>
+                <span class="status-value" id="droneStatus">Ready</span>
+                <div class="status-indicator" id="droneIndicator"></div>
+            </div>
+            
+            <div class="status-item">
+                <span class="status-label">Battery</span>
+                <span class="status-value" id="batteryLevel">85%</span>
+            </div>
+            
+            <div class="status-item">
+                <span class="status-label">Signal</span>
+                <span class="status-value" id="signalLevel">92%</span>
+            </div>
+            
+            <div class="status-item">
+                <span class="status-label">Weather</span>
+                <span class="status-value" id="weatherStatus">Clear</span>
+            </div>
+            
+            <div class="status-item">
+                <span class="status-label">Air Traffic</span>
+                <span class="status-value" id="airTrafficStatus">Low</span>
+            </div>
+            
+            <div class="status-item">
+                <span class="status-label">Wind Speed</span>
+                <span class="status-value" id="windSpeed">8 km/h</span>
+            </div>
+        </div>
+
+        <div class="flight-path">
+            <div class="path-info">
+                <div class="path-item">
+                    <div class="path-label">Distance</div>
+                    <div class="path-value" id="distanceValue">0.0 km</div>
+                </div>
+                <div class="path-item">
+                    <div class="path-label">Speed</div>
+                    <div class="path-value" id="speedValue">0 km/h</div>
+                </div>
+                <div class="path-item">
+                    <div class="path-label">ETA</div>
+                    <div class="path-value" id="etaValue">--:--</div>
+                </div>
+                <div class="path-item">
+                    <div class="path-label">Altitude</div>
+                    <div class="path-value" id="currentAltitude">10m</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="start-marker" id="startMarker">🚁 Start Point</div>
+        <div class="end-marker" id="endMarker">🎯 End Point</div>
+
+        <div class="collision-alert" id="collisionAlert" style="display: none;">
+            ⚠️ WARNING: Obstacle Ahead!
+        </div>
+    </div>
+
+    <script>
+        // Advanced Drone Dashboard JavaScript
+        let scene, camera, renderer, controls;
+        let drone, ground, grid;
+        let startPoint, endPoint, flightPath;
+        let isAutoFlying = false;
+        let autoFlyPath = [];
+        let currentPathIndex = 0;
+        let joystickStates = { forward: 0, lateral: 0 };
+        let dronePosition = { x: 0, y: 10, z: 0 };
+        let droneRotation = { y: 0 };
+        let environmentalFactors = {
+            windSpeed: 8,
+            weather: 'clear',
+            airTraffic: 'low'
+        };
+        
+        // Collision detection system
+        let obstacles = [];
+        let safeRadius = 3.0;
+        let collisionAlert = false;
+        let alertTimeout = null;
+        
+        // Auto Fly system
+        let autoFlyStartPosition = { x: -50, y: 10, z: -50 };
+        let autoFlyEndPosition = { x: 50, y: 10, z: 50 };
+        let autoFlyPhase = 'idle'; // idle, takeoff, flight, landing, complete
+        let autoFlyProgress = 0;
+        let flightPathPoints = [];
+
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x000000, 50, 200);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(20, 30, 20);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                alpha: true,
+                powerPreference: "high-performance"
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            document.getElementById('scene-container').appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2;
+
+            addLighting();
+            createEnvironment();
+            createDrone();
+            createFlightPath();
+            setupEventListeners();
+            animate();
+            
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                }, 500);
+            }, 2000);
+        }
+
+        function addLighting() {
+            // Enhanced ambient lighting for better material visibility
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+            scene.add(ambientLight);
+
+            // Main directional light (sun)
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            directionalLight.position.set(50, 50, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 500;
+            directionalLight.shadow.camera.left = -100;
+            directionalLight.shadow.camera.right = 100;
+            directionalLight.shadow.camera.top = 100;
+            directionalLight.shadow.camera.bottom = -100;
+            scene.add(directionalLight);
+
+            // Fill light from opposite direction
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            fillLight.position.set(-30, 30, -30);
+            scene.add(fillLight);
+
+            // Drone-specific lighting
+            const droneLight = new THREE.PointLight(0x00d4ff, 0.5, 30);
+            droneLight.position.set(0, 10, 0);
+            scene.add(droneLight);
+
+            // Rim lighting for metallic materials
+            const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
+            rimLight.position.set(0, 0, 50);
+            scene.add(rimLight);
+        }
+
+        function createEnvironment() {
+            const groundGeometry = new THREE.PlaneGeometry(200, 200);
+            const groundMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x1a1a1a,
+                transparent: true,
+                opacity: 0.8
+            });
+            ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            const gridHelper = new THREE.GridHelper(200, 50, 0x444444, 0x222222);
+            gridHelper.position.y = 0.1;
+            scene.add(gridHelper);
+
+            const startGeometry = new THREE.CylinderGeometry(2, 2, 0.5, 8);
+            const startMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+            startPoint = new THREE.Mesh(startGeometry, startMaterial);
+            startPoint.position.set(-50, 0.25, -50);
+            startPoint.castShadow = true;
+            scene.add(startPoint);
+
+            const endGeometry = new THREE.CylinderGeometry(2, 2, 0.5, 8);
+            const endMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+            endPoint = new THREE.Mesh(endGeometry, endMaterial);
+            endPoint.position.set(50, 0.25, 50);
+            endPoint.castShadow = true;
+            scene.add(endPoint);
+
+            addObstacles();
+        }
+
+        function addObstacles() {
+            // Clear existing obstacles
+            obstacles.forEach(obstacle => {
+                if (obstacle.mesh) {
+                    scene.remove(obstacle.mesh);
+                }
+            });
+            obstacles = [];
+            
+            // Generate random obstacles
+            const numObstacles = Math.floor(Math.random() * 8) + 5; // 5-12 obstacles
+            const obstacleColors = [
+                0x8b4513, // Brown
+                0x654321, // Dark Brown
+                0xa0522d, // Sienna
+                0xcd853f, // Peru
+                0xd2691e, // Chocolate
+                0x8b7355, // Tan
+                0x696969, // Dim Gray
+                0x708090  // Slate Gray
+            ];
+            
+            for (let i = 0; i < numObstacles; i++) {
+                // Random position within scene bounds (avoiding start and end areas)
+                let x, z;
+                do {
+                    x = (Math.random() - 0.5) * 160; // -80 to 80
+                    z = (Math.random() - 0.5) * 160; // -80 to 80
+                } while (
+                    // Avoid start area (-50, -50) with 15 unit radius
+                    Math.sqrt(Math.pow(x - (-50), 2) + Math.pow(z - (-50), 2)) < 15 ||
+                    // Avoid end area (50, 50) with 15 unit radius
+                    Math.sqrt(Math.pow(x - 50, 2) + Math.pow(z - 50, 2)) < 15 ||
+                    // Avoid center area (0, 0) with 10 unit radius
+                    Math.sqrt(Math.pow(x - 0, 2) + Math.pow(z - 0, 2)) < 10
+                );
+                
+                // Random scale between 0.8 and 2.5
+                const scale = 0.8 + Math.random() * 1.7;
+                
+                // Random color
+                const color = obstacleColors[Math.floor(Math.random() * obstacleColors.length)];
+                
+                // Random rotation for variety
+                const rotationY = Math.random() * Math.PI * 2;
+                
+                // Random obstacle type (building, tower, or block)
+                const obstacleType = Math.random();
+                let geometry, height;
+                
+                if (obstacleType < 0.4) {
+                    // Building - wider and shorter
+                    geometry = new THREE.BoxGeometry(scale * 6, scale * 6, scale * 6);
+                    height = scale * 3;
+                } else if (obstacleType < 0.7) {
+                    // Tower - tall and narrow
+                    geometry = new THREE.BoxGeometry(scale * 3, scale * 12, scale * 3);
+                    height = scale * 6;
+                } else {
+                    // Block - standard proportions
+                    geometry = new THREE.BoxGeometry(scale * 4, scale * 8, scale * 4);
+                    height = scale * 4;
+                }
+                
+                const material = new THREE.MeshLambertMaterial({ color: color });
+                const obstacle = new THREE.Mesh(geometry, material);
+                
+                // Set position and rotation
+                obstacle.position.set(x, height, z);
+                obstacle.rotation.y = rotationY;
+                obstacle.castShadow = true;
+                obstacle.receiveShadow = true;
+                scene.add(obstacle);
+                
+                // Store obstacle data for collision detection
+                obstacles.push({
+                    mesh: obstacle,
+                    position: { x: x, y: height, z: z },
+                    scale: scale,
+                    originalColor: color,
+                    rotationY: rotationY,
+                    type: obstacleType < 0.4 ? 'building' : obstacleType < 0.7 ? 'tower' : 'block'
+                });
+            }
+            
+            console.log(`Generated ${numObstacles} random obstacles`);
+            
+            // Update status to show obstacle count
+            updateStatus('airTrafficStatus', `${numObstacles} Obstacles`);
+        }
+
+        function createDrone() {
+            const droneGroup = new THREE.Group();
+
+            // Main body - compact rectangular chassis
+            const bodyGeometry = new THREE.BoxGeometry(1.8, 0.4, 1.8);
+            const bodyMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x2a2a2a,
+                metalness: 0.3,
+                roughness: 0.7
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            droneGroup.add(body);
+
+            // Battery pack detail on top
+            const batteryGeometry = new THREE.BoxGeometry(1.2, 0.1, 1.2);
+            const batteryMaterial = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+            const battery = new THREE.Mesh(batteryGeometry, batteryMaterial);
+            battery.position.set(0, 0.25, 0);
+            droneGroup.add(battery);
+
+            // Sensor array on top
+            const sensorGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.05, 8);
+            const sensorMaterial = new THREE.MeshLambertMaterial({ color: 0x00d4ff });
+            const sensor = new THREE.Mesh(sensorGeometry, sensorMaterial);
+            sensor.position.set(0, 0.35, 0);
+            droneGroup.add(sensor);
+
+            // Vent details on sides
+            const ventGeometry = new THREE.BoxGeometry(0.1, 0.2, 0.3);
+            const ventMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
+            const vent1 = new THREE.Mesh(ventGeometry, ventMaterial);
+            vent1.position.set(0.95, 0, 0.5);
+            droneGroup.add(vent1);
+            const vent2 = new THREE.Mesh(ventGeometry, ventMaterial);
+            vent2.position.set(-0.95, 0, 0.5);
+            droneGroup.add(vent2);
+
+            // Sleek arms with slight angle (DJI style)
+            const armGeometry = new THREE.BoxGeometry(0.15, 0.15, 3.5);
+            const armMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x3a3a3a,
+                metalness: 0.4,
+                roughness: 0.6
+            });
+            
+            // Front arm (slightly angled up)
+            const arm1 = new THREE.Mesh(armGeometry, armMaterial);
+            arm1.position.set(0, 0.1, 2.5);
+            arm1.rotation.x = -0.1;
+            droneGroup.add(arm1);
+            
+            // Back arm (slightly angled up)
+            const arm2 = new THREE.Mesh(armGeometry, armMaterial);
+            arm2.position.set(0, 0.1, -2.5);
+            arm2.rotation.x = 0.1;
+            droneGroup.add(arm2);
+            
+            // Left arm (slightly angled up)
+            const arm3 = new THREE.Mesh(armGeometry, armMaterial);
+            arm3.rotation.z = Math.PI / 2;
+            arm3.position.set(-2.5, 0.1, 0);
+            arm3.rotation.x = -0.1;
+            droneGroup.add(arm3);
+            
+            // Right arm (slightly angled up)
+            const arm4 = new THREE.Mesh(armGeometry, armMaterial);
+            arm4.rotation.z = Math.PI / 2;
+            arm4.position.set(2.5, 0.1, 0);
+            arm4.rotation.x = 0.1;
+            droneGroup.add(arm4);
+
+            // Rotor motors at the end of each arm
+            const motorGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.3, 8);
+            const motorMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x1a1a1a,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            
+            const motors = [];
+            const motorPositions = [
+                { x: 0, z: 4.2, y: 0.3 },    // Front
+                { x: 0, z: -4.2, y: 0.3 },   // Back
+                { x: 4.2, z: 0, y: 0.3 },    // Right
+                { x: -4.2, z: 0, y: 0.3 }    // Left
+            ];
+
+            motorPositions.forEach(pos => {
+                const motor = new THREE.Mesh(motorGeometry, motorMaterial);
+                motor.position.set(pos.x, pos.y, pos.z);
+                motor.castShadow = true;
+                droneGroup.add(motor);
+                motors.push(motor);
+            });
+
+            // Propeller blades (semi-transparent with motion blur effect)
+            const propellerGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.02, 8);
+            const propellerMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x00d4ff,
+                transparent: true,
+                opacity: 0.7
+            });
+            
+            const propellers = [];
+            const propPositions = [
+                { x: 0, z: 4.2, y: 0.5 },    // Front
+                { x: 0, z: -4.2, y: 0.5 },   // Back
+                { x: 4.2, z: 0, y: 0.5 },    // Right
+                { x: -4.2, z: 0, y: 0.5 }    // Left
+            ];
+
+            propPositions.forEach(pos => {
+                const propeller = new THREE.Mesh(propellerGeometry, propellerMaterial);
+                propeller.position.set(pos.x, pos.y, pos.z);
+                propeller.castShadow = true;
+                droneGroup.add(propeller);
+                propellers.push(propeller);
+            });
+
+            // LED lights for orientation
+            // Front lights (green/blue)
+            const frontLightGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+            const frontLightMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x00ff88,
+                emissive: 0x00ff88,
+                emissiveIntensity: 0.3
+            });
+            const frontLight1 = new THREE.Mesh(frontLightGeometry, frontLightMaterial);
+            frontLight1.position.set(0.3, 0.2, 0.9);
+            droneGroup.add(frontLight1);
+            const frontLight2 = new THREE.Mesh(frontLightGeometry, frontLightMaterial);
+            frontLight2.position.set(-0.3, 0.2, 0.9);
+            droneGroup.add(frontLight2);
+
+            // Rear lights (red)
+            const rearLightGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+            const rearLightMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xff4444,
+                emissive: 0xff4444,
+                emissiveIntensity: 0.3
+            });
+            const rearLight1 = new THREE.Mesh(rearLightGeometry, rearLightMaterial);
+            rearLight1.position.set(0.3, 0.2, -0.9);
+            droneGroup.add(rearLight1);
+            const rearLight2 = new THREE.Mesh(rearLightGeometry, rearLightMaterial);
+            rearLight2.position.set(-0.3, 0.2, -0.9);
+            droneGroup.add(rearLight2);
+
+            // Camera module/gimbal mounted at front underside
+            const cameraMountGeometry = new THREE.BoxGeometry(0.3, 0.2, 0.3);
+            const cameraMountMaterial = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+            const cameraMount = new THREE.Mesh(cameraMountGeometry, cameraMountMaterial);
+            cameraMount.position.set(0, -0.3, 0.6);
+            droneGroup.add(cameraMount);
+
+            const cameraGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.2, 8);
+            const cameraMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x000000,
+                metalness: 0.9,
+                roughness: 0.1
+            });
+            const camera = new THREE.Mesh(cameraGeometry, cameraMaterial);
+            camera.position.set(0, -0.4, 0.6);
+            droneGroup.add(camera);
+
+            // Camera lens
+            const lensGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.05, 8);
+            const lensMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x000000,
+                metalness: 0.1,
+                roughness: 0.9
+            });
+            const lens = new THREE.Mesh(lensGeometry, lensMaterial);
+            lens.position.set(0, -0.45, 0.6);
+            droneGroup.add(lens);
+
+            // Landing gear
+            const landingGearGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8);
+            const landingGearMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+            
+            const landingGearPositions = [
+                { x: 0.6, z: 0.6 },
+                { x: -0.6, z: 0.6 },
+                { x: 0.6, z: -0.6 },
+                { x: -0.6, z: -0.6 }
+            ];
+
+            landingGearPositions.forEach(pos => {
+                const landingGear = new THREE.Mesh(landingGearGeometry, landingGearMaterial);
+                landingGear.position.set(pos.x, -0.35, pos.z);
+                droneGroup.add(landingGear);
+            });
+
+            drone = droneGroup;
+            // Set drone at start position
+            drone.position.set(autoFlyStartPosition.x, autoFlyStartPosition.y, autoFlyStartPosition.z);
+            dronePosition = { ...autoFlyStartPosition };
+            drone.castShadow = true;
+            scene.add(drone);
+
+            // Store references for animation
+            drone.propellers = propellers;
+            drone.motors = motors;
+            drone.frontLights = [frontLight1, frontLight2];
+            drone.rearLights = [rearLight1, rearLight2];
+        }
+
+        function createFlightPath() {
+            const pathGeometry = new THREE.BufferGeometry();
+            const pathMaterial = new THREE.LineBasicMaterial({ 
+                color: 0x00d4ff,
+                transparent: true,
+                opacity: 0.6,
+                linewidth: 3
+            });
+            
+            flightPath = new THREE.Line(pathGeometry, pathMaterial);
+            scene.add(flightPath);
+        }
+
+        function updateFlightPath() {
+            if (flightPathPoints.length > 1) {
+                const points = flightPathPoints.map(point => new THREE.Vector3(point.x, point.y, point.z));
+                flightPath.geometry.setFromPoints(points);
+                flightPath.geometry.attributes.position.needsUpdate = true;
+            }
+        }
+
+        function addFlightPathPoint() {
+            if (drone) {
+                flightPathPoints.push({
+                    x: drone.position.x,
+                    y: drone.position.y,
+                    z: drone.position.z
+                });
+                updateFlightPath();
+            }
+        }
+
+        function setupEventListeners() {
+            const altitudeSlider = document.getElementById('altitudeSlider');
+            const altitudeValue = document.getElementById('altitudeValue');
+            
+            altitudeSlider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                altitudeValue.textContent = value + 'm';
+                dronePosition.y = parseInt(value);
+                if (!isAutoFlying) {
+                    drone.position.y = dronePosition.y;
+                }
+            });
+
+            const rotationSlider = document.getElementById('rotationSlider');
+            const rotationValue = document.getElementById('rotationValue');
+            
+            rotationSlider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                rotationValue.textContent = value + '°';
+                droneRotation.y = THREE.MathUtils.degToRad(parseInt(value));
+                if (!isAutoFlying) {
+                    drone.rotation.y = droneRotation.y;
+                }
+            });
+
+            setupJoystick('forwardJoystick', 'forwardStick', 'forward');
+            setupJoystick('lateralJoystick', 'lateralStick', 'lateral');
+
+            document.getElementById('autoFlyBtn').addEventListener('click', toggleAutoFly);
+            document.getElementById('resetBtn').addEventListener('click', resetDrone);
+            document.getElementById('emergencyBtn').addEventListener('click', emergencyStop);
+            document.getElementById('regenerateObstaclesBtn').addEventListener('click', regenerateObstacles);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function setupJoystick(containerId, stickId, axis) {
+            const container = document.getElementById(containerId);
+            const stick = document.getElementById(stickId);
+            let isDragging = false;
+
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                const rect = container.getBoundingClientRect();
+                const startPos = {
+                    x: e.clientX - rect.left - rect.width / 2,
+                    y: e.clientY - rect.top - rect.height / 2
+                };
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const rect = container.getBoundingClientRect();
+                const currentPos = {
+                    x: e.clientX - rect.left - rect.width / 2,
+                    y: e.clientY - rect.top - rect.height / 2
+                };
+
+                const distance = Math.sqrt(currentPos.x ** 2 + currentPos.y ** 2);
+                const maxDistance = rect.width / 2 - 10;
+
+                if (distance > maxDistance) {
+                    currentPos.x = (currentPos.x / distance) * maxDistance;
+                    currentPos.y = (currentPos.y / distance) * maxDistance;
+                }
+
+                stick.style.transform = `translate(${currentPos.x}px, ${currentPos.y}px)`;
+                
+                const normalizedX = currentPos.x / maxDistance;
+                const normalizedY = currentPos.y / maxDistance;
+                
+                if (axis === 'forward') {
+                    joystickStates.forward = -normalizedY;
+                } else if (axis === 'lateral') {
+                    joystickStates.lateral = normalizedX;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    stick.style.transform = 'translate(-50%, -50%)';
+                    joystickStates[axis === 'forward' ? 'forward' : 'lateral'] = 0;
+                }
+            });
+        }
+
+        function toggleAutoFly() {
+            const btn = document.getElementById('autoFlyBtn');
+            
+            if (!isAutoFlying) {
+                isAutoFlying = true;
+                btn.textContent = 'Stop Auto Fly';
+                btn.classList.add('active');
+                startAutoFly();
+            } else {
+                isAutoFlying = false;
+                btn.textContent = 'Auto Fly';
+                btn.classList.remove('active');
+                stopAutoFly();
+            }
+        }
+
+        function startAutoFly() {
+            // Reset to start position first
+            resetToStartPosition(() => {
+                // Clear previous flight path
+                flightPathPoints = [];
+                updateFlightPath();
+                
+                // Start auto fly sequence
+                autoFlyPhase = 'takeoff';
+                autoFlyProgress = 0;
+                updateStatus('droneStatus', 'Taking Off');
+                updateStatus('droneIndicator', 'status-indicator');
+            });
+        }
+
+        function resetToStartPosition(callback) {
+            const startPos = autoFlyStartPosition;
+            const duration = 2000; // 2 seconds
+            const startTime = Date.now();
+            const startPosX = drone.position.x;
+            const startPosY = drone.position.y;
+            const startPosZ = drone.position.z;
+            
+            function animateReset() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Smooth easing
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                
+                drone.position.x = THREE.MathUtils.lerp(startPosX, startPos.x, easeProgress);
+                drone.position.y = THREE.MathUtils.lerp(startPosY, startPos.y, easeProgress);
+                drone.position.z = THREE.MathUtils.lerp(startPosZ, startPos.z, easeProgress);
+                
+                dronePosition.x = drone.position.x;
+                dronePosition.y = drone.position.y;
+                dronePosition.z = drone.position.z;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateReset);
+                } else {
+                    if (callback) callback();
+                }
+            }
+            
+            animateReset();
+        }
+
+        function stopAutoFly() {
+            autoFlyPhase = 'idle';
+            updateStatus('droneStatus', 'Ready');
+            updateStatus('droneIndicator', 'status-indicator');
+        }
+
+        function resetDrone() {
+            // Reset to start position with smooth animation
+            resetToStartPosition(() => {
+                // Reset controls
+                droneRotation = { y: 0 };
+                drone.rotation.y = droneRotation.y;
+                
+                document.getElementById('altitudeSlider').value = 10;
+                document.getElementById('altitudeValue').textContent = '10m';
+                document.getElementById('rotationSlider').value = 0;
+                document.getElementById('rotationValue').textContent = '0°';
+                
+                // Clear flight path
+                flightPathPoints = [];
+                updateFlightPath();
+                
+                // Reset auto fly state
+                autoFlyPhase = 'idle';
+                isAutoFlying = false;
+                document.getElementById('autoFlyBtn').textContent = 'Auto Fly';
+                document.getElementById('autoFlyBtn').classList.remove('active');
+            });
+        }
+
+        function emergencyStop() {
+            isAutoFlying = false;
+            document.getElementById('autoFlyBtn').textContent = 'Auto Fly';
+            document.getElementById('autoFlyBtn').classList.remove('active');
+            
+            updateStatus('droneStatus', 'Emergency Stop');
+            updateStatus('droneIndicator', 'status-indicator error');
+            
+            setTimeout(() => {
+                updateStatus('droneStatus', 'Ready');
+                updateStatus('droneIndicator', 'status-indicator');
+            }, 3000);
+        }
+
+        function updateStatus(elementId, value, className = '') {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = value;
+                if (className) {
+                    element.className = className;
+                }
+            }
+        }
+
+        function checkCollisionDetection() {
+            if (!drone || obstacles.length === 0) return;
+            
+            let closestDistance = Infinity;
+            let closestObstacle = null;
+            
+            obstacles.forEach(obstacle => {
+                const distance = Math.sqrt(
+                    Math.pow(drone.position.x - obstacle.position.x, 2) +
+                    Math.pow(drone.position.y - obstacle.position.y, 2) +
+                    Math.pow(drone.position.z - obstacle.position.z, 2)
+                );
+                
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestObstacle = obstacle;
+                }
+            });
+            
+            if (closestDistance < safeRadius) {
+                if (!collisionAlert) {
+                    collisionAlert = true;
+                    showCollisionAlert();
+                    highlightObstacle(closestObstacle);
+                }
+            } else {
+                if (collisionAlert) {
+                    collisionAlert = false;
+                    hideCollisionAlert();
+                    resetObstacleHighlight();
+                }
+            }
+        }
+
+        function showCollisionAlert() {
+            const alert = document.getElementById('collisionAlert');
+            if (alert) {
+                alert.style.display = 'block';
+            }
+        }
+
+        function hideCollisionAlert() {
+            const alert = document.getElementById('collisionAlert');
+            if (alert) {
+                alert.style.display = 'none';
+            }
+        }
+
+        function highlightObstacle(obstacle) {
+            if (obstacle && obstacle.mesh) {
+                obstacle.mesh.material.color.setHex(0xff0000);
+                obstacle.mesh.material.emissive = new THREE.Color(0xff0000);
+                obstacle.mesh.material.emissiveIntensity = 0.3;
+            }
+        }
+
+        function resetObstacleHighlight() {
+            obstacles.forEach(obstacle => {
+                if (obstacle.mesh) {
+                    obstacle.mesh.material.color.setHex(obstacle.originalColor);
+                    obstacle.mesh.material.emissive = new THREE.Color(0x000000);
+                    obstacle.mesh.material.emissiveIntensity = 0;
+                }
+            });
+        }
+
+        function updateAutoFly() {
+            if (!isAutoFlying || autoFlyPhase === 'idle') return;
+            
+            const time = Date.now() * 0.001;
+            
+            switch (autoFlyPhase) {
+                case 'takeoff':
+                    autoFlyProgress += 0.02;
+                    if (autoFlyProgress >= 1) {
+                        autoFlyPhase = 'flight';
+                        autoFlyProgress = 0;
+                        updateStatus('droneStatus', 'In Flight');
+                    } else {
+                        // Takeoff animation - rise to flight altitude
+                        const takeoffHeight = 30;
+                        dronePosition.y = THREE.MathUtils.lerp(autoFlyStartPosition.y, takeoffHeight, autoFlyProgress);
+                        drone.position.y = dronePosition.y;
+                    }
+                    break;
+                    
+                case 'flight':
+                    autoFlyProgress += 0.01;
+                    if (autoFlyProgress >= 1) {
+                        autoFlyPhase = 'landing';
+                        autoFlyProgress = 0;
+                        updateStatus('droneStatus', 'Landing');
+                    } else {
+                        // Flight path - smooth curve from start to end
+                        const t = autoFlyProgress;
+                        const x = THREE.MathUtils.lerp(autoFlyStartPosition.x, autoFlyEndPosition.x, t);
+                        const z = THREE.MathUtils.lerp(autoFlyStartPosition.z, autoFlyEndPosition.z, t);
+                        const y = 30 + Math.sin(t * Math.PI) * 10; // Slight curve
+                        
+                        dronePosition.x = x;
+                        dronePosition.y = y;
+                        dronePosition.z = z;
+                        drone.position.set(dronePosition.x, dronePosition.y, dronePosition.z);
+                        
+                        // Update drone rotation to face direction of travel
+                        const nextX = THREE.MathUtils.lerp(autoFlyStartPosition.x, autoFlyEndPosition.x, Math.min(t + 0.01, 1));
+                        const nextZ = THREE.MathUtils.lerp(autoFlyStartPosition.z, autoFlyEndPosition.z, Math.min(t + 0.01, 1));
+                        const direction = new THREE.Vector3(nextX - x, 0, nextZ - z).normalize();
+                        drone.rotation.y = Math.atan2(direction.x, direction.z);
+                        
+                        // Add flight path point
+                        addFlightPathPoint();
+                    }
+                    break;
+                    
+                case 'landing':
+                    autoFlyProgress += 0.02;
+                    if (autoFlyProgress >= 1) {
+                        autoFlyPhase = 'complete';
+                        updateStatus('droneStatus', 'Mission Complete');
+                        setTimeout(() => {
+                            isAutoFlying = false;
+                            document.getElementById('autoFlyBtn').textContent = 'Auto Fly';
+                            document.getElementById('autoFlyBtn').classList.remove('active');
+                            updateStatus('droneStatus', 'Ready');
+                        }, 2000);
+                    } else {
+                        // Landing animation - descend to end position
+                        const landingHeight = 10;
+                        dronePosition.y = THREE.MathUtils.lerp(30, landingHeight, autoFlyProgress);
+                        drone.position.y = dronePosition.y;
+                    }
+                    break;
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            controls.update();
+
+            // Update auto fly system
+            updateAutoFly();
+
+            if (!isAutoFlying) {
+                const speed = 0.5;
+                const forwardSpeed = joystickStates.forward * speed;
+                const lateralSpeed = joystickStates.lateral * speed;
+                
+                dronePosition.x += Math.sin(droneRotation.y) * forwardSpeed + Math.cos(droneRotation.y) * lateralSpeed;
+                dronePosition.z += Math.cos(droneRotation.y) * forwardSpeed - Math.sin(droneRotation.y) * lateralSpeed;
+                
+                drone.position.set(dronePosition.x, dronePosition.y, dronePosition.z);
+                drone.rotation.y = droneRotation.y;
+                
+                // Add flight path point during manual flight
+                if (Math.abs(forwardSpeed) > 0.1 || Math.abs(lateralSpeed) > 0.1) {
+                    addFlightPathPoint();
+                }
+            }
+
+            // Enhanced propeller animation with motion blur effect
+            if (drone.propellers) {
+                const time = Date.now() * 0.001;
+                drone.propellers.forEach((propeller, index) => {
+                    // Faster rotation for realistic effect
+                    propeller.rotation.y += 0.8;
+                    
+                    // Motion blur effect - adjust opacity based on speed
+                    const speed = Math.abs(joystickStates.forward) + Math.abs(joystickStates.lateral);
+                    const opacity = 0.3 + (speed * 0.4);
+                    propeller.material.opacity = Math.min(opacity, 0.7);
+                    
+                    // Slight wobble effect for realism
+                    propeller.rotation.z = Math.sin(time * 10 + index) * 0.02;
+                });
+            }
+
+            // LED light animations
+            if (drone.frontLights && drone.rearLights) {
+                const time = Date.now() * 0.001;
+                
+                // Front lights pulsing effect
+                drone.frontLights.forEach((light, index) => {
+                    const pulse = 0.3 + Math.sin(time * 2 + index) * 0.1;
+                    light.material.emissiveIntensity = pulse;
+                });
+                
+                // Rear lights steady glow with slight variation
+                drone.rearLights.forEach((light, index) => {
+                    const glow = 0.3 + Math.sin(time * 1.5 + index) * 0.05;
+                    light.material.emissiveIntensity = glow;
+                });
+            }
+
+            // Enhanced camera tracking
+            let targetCameraPosition;
+            let targetLookAt;
+            
+            if (isAutoFlying) {
+                // During auto fly, maintain better distance and angle
+                const flightHeight = Math.max(dronePosition.y, 20);
+                targetCameraPosition = new THREE.Vector3(
+                    dronePosition.x - 15,
+                    flightHeight + 25,
+                    dronePosition.z - 10
+                );
+                targetLookAt = new THREE.Vector3(
+                    dronePosition.x + 5,
+                    dronePosition.y,
+                    dronePosition.z + 5
+                );
+            } else {
+                // Manual flight - closer tracking
+                targetCameraPosition = new THREE.Vector3(
+                    dronePosition.x,
+                    dronePosition.y + 20,
+                    dronePosition.z + 15
+                );
+                targetLookAt = new THREE.Vector3(
+                    dronePosition.x,
+                    dronePosition.y,
+                    dronePosition.z
+                );
+            }
+            
+            camera.position.lerp(targetCameraPosition, 0.02);
+            camera.lookAt(targetLookAt);
+
+            updateFlightPath();
+
+            // Check collision detection
+            checkCollisionDetection();
+            
+            updateStatus('currentAltitude', Math.round(dronePosition.y) + 'm');
+            updateStatus('speedValue', Math.round(Math.abs(joystickStates.forward) * 50) + ' km/h');
+            
+            updateEnvironmentalFactors();
+
+            renderer.render(scene, camera);
+        }
+
+        function updateEnvironmentalFactors() {
+            const time = Date.now() * 0.001;
+            environmentalFactors.windSpeed = 5 + Math.sin(time * 0.1) * 3;
+            environmentalFactors.weather = Math.sin(time * 0.05) > 0 ? 'clear' : 'cloudy';
+            
+            updateStatus('windSpeed', Math.round(environmentalFactors.windSpeed) + ' km/h');
+            updateStatus('weatherStatus', environmentalFactors.weather);
+        }
+
+        function regenerateObstacles() {
+            // Stop any ongoing auto fly
+            if (isAutoFlying) {
+                isAutoFlying = false;
+                autoFlyPhase = 'idle';
+                document.getElementById('autoFlyBtn').textContent = 'Auto Fly';
+                document.getElementById('autoFlyBtn').classList.remove('active');
+                updateStatus('droneStatus', 'Ready');
+            }
+            
+            // Clear flight path
+            flightPathPoints = [];
+            updateFlightPath();
+            
+            // Generate new random obstacles
+            addObstacles();
+            
+            // Reset collision alert
+            collisionAlert = false;
+            hideCollisionAlert();
+            resetObstacleHighlight();
+            
+            // Show feedback
+            updateStatus('droneStatus', 'New Obstacles Generated');
+            setTimeout(() => {
+                updateStatus('droneStatus', 'Ready');
+            }, 2000);
+            
+            console.log('Obstacles regenerated');
+        }
+
+        window.addEventListener('load', initScene);
+    </script>
+</body>
+</html>
