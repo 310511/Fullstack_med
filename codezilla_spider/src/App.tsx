@@ -44,6 +44,7 @@ import { MedicalRecordsDashboard } from "@/components/medical-records/MedicalRec
 import { PatientProfile } from "@/components/medical-records/PatientProfile";
 import { PrescriptionManager } from "@/components/medical-records/PrescriptionManager";
 import UnifiedGeneChain from "@/components/genechain-assist/UnifiedGeneChain";
+import GeneChainDashboard from "@/components/genechain/GeneChainDashboard";
 import { MobileTest } from "@/components/MobileTest";
 import { FitnessDashboard } from "@/components/fitness/FitnessDashboard";
 import { BmiCalculator } from "@/components/health/BmiCalculator";
@@ -103,7 +104,7 @@ const AppContent = () => {
       <Route path="/medical-records" element={<MedicalRecordsDashboard />} />
                       <Route path="/patient-profile" element={<PatientProfile />} />
               <Route path="/prescriptions" element={<PrescriptionManager />} />
-                    <Route path="/genechain" element={<UnifiedGeneChain />} />
+                    <Route path="/genechain" element={<GeneChainDashboard />} />
       <Route path="/medicine-recommendation" element={<EnhancedMedicineAIDashboard />} />
       <Route path="/fitness-dashboard" element={<FitnessDashboard />} />
       <Route path="/bmi-calculator" element={<BmiCalculator />} />
