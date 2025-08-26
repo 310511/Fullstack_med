@@ -21,6 +21,7 @@ import { Dashboard } from "./pages/Dashboard";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { AIGeminiMedicineRecommendation } from "@/components/medicine-recommendation/AIGeminiMedicineRecommendation";
+import { AIOpenAIMedicineRecommendation } from "@/components/medicine-recommendation/AIOpenAIMedicineRecommendation";
 import { InfiniteMemoryDashboard } from "@/components/infinite-memory/InfiniteMemoryDashboard";
 import { EnhancedMLPredictionsDashboard } from "@/components/ml-predictions/EnhancedMLPredictionsDashboard";
 import InventoryDashboard from "@/components/inventory/InventoryDashboard";
