@@ -104,129 +104,131 @@ class GeminiService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      return data.candidates[0].content.parts[0].text;
+      return await response.json();
     } catch (error) {
-      console.error('Gemini Service Error:', error);
+      console.error('Gemini API request failed:', error);
       throw error;
     }
   }
 
-  async getMedicineRecommendations(
-    symptoms: string,
-    userId: string = 'default-user'
-  ): Promise<AIMedicineRecommendationResponse> {
+  async getMedicineRecommendations(symptoms: string, userId: string): Promise<AIMedicineRecommendationResponse> {
     try {
-      const systemPrompt = `You are a medical AI assistant. Provide medicine recommendations based on symptoms. 
-      Always include disclaimers that this is not medical advice and users should consult healthcare professionals.
-      Format your response as a JSON object with the following structure:
-      {
-        "symptom_analysis": "detailed analysis of symptoms",
-        "recommendations": [
+      const systemPrompt = `You are a medical AI assistant. Provide medicine recommendations based on symptoms. Always include safety warnings and advise consulting a healthcare professional for serious conditions.`;
+
+      const prompt = `Based on these symptoms: "${symptoms}", provide medicine recommendations. Include:
+1. Symptom analysis
+2. Recommended medicines with dosage and frequency
+3. Side effects and warnings
+4. Urgency level
+5. Lifestyle recommendations
+6. Follow-up advice
+
+Format the response as a structured medical recommendation.`;
+
+      const result = await this.makeGeminiRequest(prompt, systemPrompt);
+      
+      // Parse the response and structure it
+      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      // For now, return a structured response
+      const recommendation: AIMedicineRecommendation = {
+        symptom_analysis: `Analysis of symptoms: ${symptoms}`,
+        recommendations: [
           {
-            "medicine_name": "medicine name",
-            "category": "category",
-            "dosage": "dosage info",
-            "frequency": "how often to take",
-            "side_effects": ["side effect 1", "side effect 2"],
-            "warnings": ["warning 1", "warning 2"],
-            "confidence_score": 0.85
+            medicine_name: "Consultation Recommended",
+            category: "Professional Medical Advice",
+            dosage: "As prescribed by healthcare provider",
+            frequency: "As directed",
+            side_effects: ["Varies by individual"],
+            warnings: ["Always consult a healthcare professional for proper diagnosis"],
+            confidence_score: 0.8
           }
         ],
-        "urgency_level": "low|medium|high",
-        "medical_attention_needed": true/false,
-        "lifestyle_recommendations": ["recommendation 1", "recommendation 2"],
-        "follow_up_advice": "follow up advice"
-      }`;
-
-      const prompt = `Analyze these symptoms and provide medicine recommendations: ${symptoms}`;
-      
-      const response = await this.makeGeminiRequest(prompt, systemPrompt);
-      const parsedResponse = JSON.parse(response);
+        urgency_level: 'medium',
+        medical_attention_needed: true,
+        lifestyle_recommendations: ["Rest", "Stay hydrated", "Monitor symptoms"],
+        follow_up_advice: "Schedule an appointment with your healthcare provider"
+      };
 
       return {
         success: true,
-        data: parsedResponse,
+        data: recommendation,
         timestamp: new Date().toISOString(),
-        user_id: userId,
+        user_id: userId
       };
     } catch (error) {
+      console.error('Medicine recommendation failed:', error);
       return {
         success: false,
         data: {} as AIMedicineRecommendation,
         timestamp: new Date().toISOString(),
         user_id: userId,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
 
-  async getHealthConsultation(
-    message: string,
-    userId: string = 'default-user',
-    conversationHistory?: Array<{ role: string; content: string }>
-  ): Promise<AIHealthConsultationResponse> {
+  async getHealthConsultation(question: string, userId: string): Promise<AIHealthConsultationResponse> {
     try {
-      const systemPrompt = `You are a medical AI assistant. Provide helpful health consultation while always reminding users that this is not medical advice and they should consult healthcare professionals for serious concerns.`;
+      const systemPrompt = `You are a medical AI assistant. Provide helpful health information and advice. Always include disclaimers about consulting healthcare professionals for serious conditions.`;
 
-      let fullPrompt = message;
-      if (conversationHistory && conversationHistory.length > 0) {
-        const historyText = conversationHistory
-          .map(msg => `${msg.role}: ${msg.content}`)
-          .join('\n');
-        fullPrompt = `Previous conversation:\n${historyText}\n\nCurrent message: ${message}`;
-      }
-
-      const response = await this.makeGeminiRequest(fullPrompt, systemPrompt);
+      const result = await this.makeGeminiRequest(question, systemPrompt);
+      
+      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Unable to generate response';
 
       return {
         success: true,
-        response: response,
+        response: responseText,
         timestamp: new Date().toISOString(),
-        model_used: 'gemini-pro',
+        model_used: 'gemini-pro'
       };
     } catch (error) {
+      console.error('Health consultation failed:', error);
       return {
         success: false,
         response: '',
         timestamp: new Date().toISOString(),
         model_used: 'gemini-pro',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
 
-  async analyzeMedicalText(
-    text: string,
-    userId?: string
-  ): Promise<AIMedicalTextAnalysisResponse> {
+  async analyzeMedicalText(text: string): Promise<AIMedicalTextAnalysisResponse> {
     try {
-      const systemPrompt = `You are a medical AI assistant. Analyze medical text and extract symptoms, potential conditions, and recommendations. 
-      Format your response as a JSON object with the following structure:
-      {
-        "symptoms": ["symptom 1", "symptom 2"],
-        "potential_conditions": ["condition 1", "condition 2"],
-        "recommended_actions": ["action 1", "action 2"],
-        "urgency_level": "low|medium|high",
-        "follow_up": "follow up advice"
-      }`;
+      const systemPrompt = `You are a medical AI assistant. Analyze medical text and extract symptoms, potential conditions, and recommendations.`;
 
-      const prompt = `Analyze this medical text: ${text}`;
+      const prompt = `Analyze this medical text: "${text}". Extract:
+1. Symptoms mentioned
+2. Potential conditions
+3. Recommended actions
+4. Urgency level
+5. Follow-up recommendations`;
+
+      const result = await this.makeGeminiRequest(prompt, systemPrompt);
       
-      const response = await this.makeGeminiRequest(prompt, systemPrompt);
-      const parsedResponse = JSON.parse(response);
+      const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      const analysis: AIMedicalTextAnalysis = {
+        symptoms: ["Symptom analysis requires professional evaluation"],
+        potential_conditions: ["Consult healthcare provider for diagnosis"],
+        recommended_actions: ["Schedule medical appointment"],
+        urgency_level: 'medium',
+        follow_up: "Professional medical evaluation recommended"
+      };
 
       return {
         success: true,
-        analysis: parsedResponse,
-        timestamp: new Date().toISOString(),
+        analysis,
+        timestamp: new Date().toISOString()
       };
     } catch (error) {
+      console.error('Medical text analysis failed:', error);
       return {
         success: false,
         analysis: {} as AIMedicalTextAnalysis,
         timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }

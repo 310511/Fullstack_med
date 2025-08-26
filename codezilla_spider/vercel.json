@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm install && npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
@@ -9,6 +9,6 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://fullstack-med-2.onrender.com"
+    "VITE_API_URL": "https://fullstack-med-backend.onrender.com"
   }
 } 

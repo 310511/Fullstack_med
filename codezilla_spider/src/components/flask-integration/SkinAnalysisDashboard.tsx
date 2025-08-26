@@ -74,7 +74,7 @@ interface BodyPart {
   [key: string]: string;
 }
 
-const FLASK_API_URL = "http://localhost:5001";
+const FLASK_API_URL = import.meta.env.VITE_FLASK_API_URL || "https://fullstack-med-backend.onrender.com";
 
 export function SkinAnalysisDashboard() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);

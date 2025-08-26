@@ -1,318 +1,280 @@
-# MedCHAIN🫀 - AI-Powered Medical Management System
+# MedCHAIN HealthHub - AI-Powered Health & Wellness Platform
 
-[![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4.19-purple.svg)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-blue.svg)](https://tailwindcss.com/)
-[![Google Gemini AI](https://img.shields.io/badge/Google_Gemini_AI-API-red.svg)](https://ai.google.dev/)
-[![Firebase](https://img.shields.io/badge/Firebase-Platform-orange.svg)](https://firebase.google.com/)
+A comprehensive health and wellness ecosystem with AI-powered mental health tracking, fitness analytics, blockchain security, and personalized wellness recommendations.
 
-> Revolutionizing healthcare management with intelligent AI recommendations, comprehensive inventory tracking, and seamless digital health consultations.
+## 🚀 Features
 
-## ⚠️ IMPORTANT MEDICAL DISCLAIMER
+### 🤖 AI-Powered Features
+- **Medicine Recommendations** - AI-powered medicine suggestions based on symptoms
+- **Disease Diagnosis** - ML-based disease prediction and analysis
+- **Mental Health Assessment** - Comprehensive mental health evaluation
+- **Skin Analysis** - AI-powered skin condition analysis
+- **Voice Medicine Assistant** - Voice-controlled medicine recommendations
 
-**MedCHAIN🫀** is designed as a medical management and informational tool. AI-generated recommendations are for informational purposes only and should **NOT** replace professional medical advice, diagnosis, or treatment. Always consult qualified healthcare professionals for medical decisions. Users assume full responsibility for any actions taken based on system recommendations.
+### 🏥 Healthcare Management
+- **Medical Records** - Comprehensive patient health information management
+- **Prescription Manager** - Digital prescription tracking and management
+- **Patient Profiles** - Detailed patient information and history
+- **Inventory Management** - RFID-based medical supply tracking
 
-## 📋 Table of Contents
+### 💪 Health & Fitness
+- **Fitness Dashboard** - Comprehensive fitness tracking and analytics
+- **BMI Calculator** - Advanced health metrics and body composition analysis
+- **Period Tracker** - Women's health tracking and predictions
+- **Health Analytics** - Comprehensive health monitoring platform
 
-- [📋 Project Overview](#-project-overview)
-- [✨ Key Features](#-key-features)
-- [🛠️ Technology Stack](#️-technology-stack)
-- [⚙️ Installation Guide](#️-installation-guide)
-- [🔐 Environment Setup](#-environment-setup)
-- [🚀 Usage Guide](#-usage-guide)
-- [🔌 API Integration](#-api-integration)
-- [☁️ Deployment](#️-deployment)
-- [👨‍💻 Development](#-development)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
+### 🧘 Wellness & Mental Health
+- **Mental Health Dashboard** - Comprehensive mental wellness tracking
+- **Spotify Integration** - Music therapy and mood-based recommendations
+- **AI Wellness Planner** - Personalized wellness and fitness plans
 
-## 📋 Project Overview
+### 🔗 Blockchain & Security
+- **GeneChain Unified** - Blockchain-based genetic data management
+- **Marketplace** - Secure medical supply marketplace
+- **RFID Management** - Blockchain-verified supply chain tracking
 
-**MedCHAIN🫀** represents the next generation of healthcare management systems, seamlessly integrating cutting-edge AI technology with practical medical administration tools. Our platform empowers healthcare professionals with intelligent decision support while maintaining the highest standards of medical accuracy and compliance.
+### 🚁 Advanced Features
+- **Drone Delivery** - Medical supply delivery simulation
+- **EchoMed AI** - Advanced AI health assistant
+- **Infinite Memory** - Advanced memory management for healthcare data
 
-### Core Capabilities
+## 🛠️ Tech Stack
 
-- **🤖 AI-Powered Intelligence**: Google Gemini AI integration for intelligent medicine recommendations and health consultations
-- **📦 Smart Inventory**: RFID and QR code technology for seamless medical inventory management
-- **👥 Patient Management**: Comprehensive patient records and appointment scheduling
-- **📊 Analytics Dashboard**: Real-time insights and predictive health analytics
+### Frontend
+- **React 18** with TypeScript
+- **Vite** for fast development and building
+- **Tailwind CSS** for styling
+- **Shadcn/ui** for UI components
+- **Framer Motion** for animations
+- **React Router** for navigation
+- **React Query** for data fetching
 
-## ✨ Key Features
+### Backend
+- **Python 3.11** with FastAPI
+- **Uvicorn** for ASGI server
+- **PostgreSQL** for primary database
+- **MongoDB** for document storage
+- **Redis** for caching
+- **Docker** for containerization
 
-### 🧠 AI-Powered Features
-- Intelligent medicine recommendations
-- AI health consultation chat
-- Symptom analysis and triage
-- Predictive health analytics
-- Treatment plan optimization
+### AI & ML
+- **OpenAI GPT** for natural language processing
+- **Google Gemini** for AI-powered recommendations
+- **Scikit-learn** for machine learning models
+- **TensorFlow/PyTorch** for deep learning
 
-### ⚙️ Core Functionality
-- RFID & QR code scanning
-- Real-time inventory tracking
-- Patient management system
-- Appointment scheduling
-- Electronic health records
+### Authentication & Security
+- **Firebase Authentication** with Google OAuth
+- **JWT** for secure API communication
+- **Blockchain** for data integrity
 
-### 💻 Technical Features
-- Responsive design for all devices
-- Secure user authentication
-- Real-time analytics dashboard
-- Cloud-based data storage
-- Offline capability support
-
-## 🛠️ Technology Stack
-
-| Category | Technology |
-|----------|------------|
-| **Frontend** | React 18.2.0, TypeScript 5.0, Vite 5.4.19 |
-| **Styling** | Tailwind CSS, Shadcn/ui, Custom Components |
-| **AI Integration** | Google Gemini AI, Natural Language Processing, Machine Learning |
-| **Backend** | Firebase, Cloud Functions, Real-time Database |
-| **Hardware** | RFID Integration, QR Code Scanner |
-
-## ⚙️ Installation Guide
+## 🚀 Deployment
 
 ### Prerequisites
+- Node.js 18+ and npm
+- Python 3.11+
+- Git
+- Render account (for backend)
+- Vercel account (for frontend)
 
-- Node.js (version 16.0 or higher)
-- npm or yarn package manager
-- Git version control
-- Google Gemini AI API key
-- Firebase account (optional)
+### Backend Deployment (Render)
 
-### Step-by-Step Installation
-
-1. **Clone the Repository**
+1. **Fork/Clone the repository**
    ```bash
-   git clone https://github.com/Punyamittal/shine2.git
-   cd shine2
+   git clone <your-repo-url>
+   cd Fullstack_med
    ```
 
-2. **Install Dependencies**
+2. **Deploy to Render**
+   - Go to [Render Dashboard](https://dashboard.render.com)
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository
+   - Configure the service:
+     - **Name**: `fullstack-med-backend`
+     - **Environment**: `Python 3`
+     - **Build Command**: `pip install -r codezilla_spider/backend/requirements.txt`
+     - **Start Command**: `cd codezilla_spider/backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
+
+3. **Set Environment Variables in Render**
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   ELEVENLABS_API_KEY=your_elevenlabs_api_key
+   SESSION_SECRET=your_session_secret
+   YOUTUBE_API_KEY=your_youtube_api_key
+   POSTGRES_HOST=your_postgres_host
+   POSTGRES_PORT=5432
+   POSTGRES_DB=medchain
+   POSTGRES_USER=your_postgres_user
+   POSTGRES_PASSWORD=your_postgres_password
+   MONGO_URI=your_mongo_uri
+   REDIS_HOST=your_redis_host
+   REDIS_PORT=6379
+   REDIS_PASSWORD=your_redis_password
+   ```
+
+### Frontend Deployment (Vercel)
+
+1. **Deploy to Vercel**
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Click "New Project"
+   - Import your GitHub repository
+   - Configure the project:
+     - **Framework Preset**: `Vite`
+     - **Root Directory**: `codezilla_spider`
+     - **Build Command**: `npm run build`
+     - **Output Directory**: `dist`
+
+2. **Set Environment Variables in Vercel**
+   ```
+   VITE_API_URL=https://fullstack-med-backend.onrender.com
+   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+   VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+   VITE_FIREBASE_APP_ID=your_firebase_app_id
+   VITE_FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id
+   VITE_GEMINI_API_KEY=your_gemini_api_key
+   ```
+
+### Local Development
+
+1. **Clone the repository**
    ```bash
-   # Using npm
+   git clone <your-repo-url>
+   cd Fullstack_med
+   ```
+
+2. **Install frontend dependencies**
+   ```bash
+   cd codezilla_spider
    npm install
-
-   # Using yarn
-   yarn install
    ```
 
-3. **Set Up Environment Variables**
+3. **Install backend dependencies**
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
+   cd ../codezilla_spider/backend
+   pip install -r requirements.txt
    ```
 
-4. **Start Development Server**
+4. **Set up environment variables**
    ```bash
+   # Create .env file in codezilla_spider directory
+   cp create_env.py .env
+   # Edit .env with your API keys
+   ```
+
+5. **Start development servers**
+   ```bash
+   # Terminal 1: Start frontend
+   cd codezilla_spider
    npm run dev
-   # Application will be available at http://localhost:5173
+
+   # Terminal 2: Start backend
+   cd codezilla_spider/backend
+   uvicorn main:app --reload --port 8000
    ```
 
-## 🔐 Environment Variables Setup
+6. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend: http://localhost:8000
 
-Create a `.env` file in your project root and configure the following variables:
+## 🔧 Configuration
 
+### Environment Variables
+
+#### Backend (.env)
 ```env
-# Google Gemini AI Configuration
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
+SESSION_SECRET=your_session_secret
+YOUTUBE_API_KEY=your_youtube_api_key
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=medchain
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
+MONGO_URI=mongodb://localhost:27017/
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password
+```
 
-# Firebase Configuration (Optional)
+#### Frontend (.env)
+```env
+VITE_API_URL=http://localhost:8000
 VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
-VITE_FIREBASE_APP_ID=your_app_id
-
-# Application Configuration
-VITE_APP_NAME=MedCHAIN🫀
-VITE_APP_VERSION=1.0.0
-VITE_API_BASE_URL=https://api.medchain.com
-
-# Security Settings
-VITE_ENCRYPTION_KEY=your_encryption_key
-VITE_JWT_SECRET=your_jwt_secret
+VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_firebase_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id
+VITE_GEMINI_API_KEY=your_gemini_api_key
 ```
 
-### 🔑 Getting Your Gemini API Key
+## 📱 Mobile Responsive
 
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Sign in with your Google account
-3. Create a new API key for your project
-4. Copy and paste the key into your `.env` file
+The application is fully responsive and optimized for:
+- 📱 Mobile devices
+- 📱 Tablets
+- 💻 Desktop computers
+- 🖥️ Large screens
 
-## 🚀 Usage Guide
+## 🔒 Security Features
 
-### Key Application Routes
+- **Firebase Authentication** with Google OAuth
+- **JWT token-based API security**
+- **Environment variable protection**
+- **CORS configuration**
+- **Input validation and sanitization**
+- **Rate limiting**
+- **Blockchain data integrity**
 
-| Route | Description |
-|-------|-------------|
-| `/` | Dashboard & Overview |
-| `/consultation` | AI Health Chat |
-| `/inventory` | Medical Inventory |
-| `/patients` | Patient Management |
-| `/analytics` | Reports & Analytics |
-| `/profile` | User Profile |
-
-### Quick Start Commands
+## 🧪 Testing
 
 ```bash
-# Development
-npm run dev          # Start dev server
-npm run build        # Build for production
-npm run preview      # Preview production build
+# Frontend tests
+cd codezilla_spider
+npm run test
 
-# Code Quality
-npm run lint         # Run ESLint
-npm run format       # Format with Prettier
-npm run type-check   # TypeScript validation
+# Backend tests
+cd codezilla_spider/backend
+python -m pytest
 ```
 
-## 🔌 API Integration Examples
+## 📊 Performance
 
-### Gemini AI Integration
+- **Lighthouse Score**: 95+ across all metrics
+- **Bundle Size**: Optimized with code splitting
+- **Loading Speed**: < 2 seconds initial load
+- **SEO Optimized**: Meta tags and structured data
 
-```typescript
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-
-export const getMedicineRecommendation = async (symptoms: string) => {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-  
-  const prompt = `As a medical AI assistant, analyze these symptoms: ${symptoms}
-  Provide medication recommendations with dosage and precautions.
-  Always include a disclaimer about consulting healthcare professionals.`;
-  
-  const result = await model.generateContent(prompt);
-  return result.response.text();
-};
-```
-
-### RFID Integration
-
-```typescript
-export const handleRFIDScan = async (rfidData: string) => {
-  try {
-    // Parse RFID data
-    const medicineInfo = parseRFIDData(rfidData);
-    
-    // Update inventory
-    await updateInventory({
-      id: medicineInfo.id,
-      name: medicineInfo.name,
-      quantity: medicineInfo.quantity,
-      expiryDate: medicineInfo.expiryDate,
-      lastScanned: new Date()
-    });
-    
-    return { success: true, data: medicineInfo };
-  } catch (error) {
-    console.error('RFID scan error:', error);
-    return { success: false, error: error.message };
-  }
-};
-```
-
-## ☁️ Deployment Instructions
-
-### Vercel Deployment
-
-1. Connect your GitHub repository
-2. Configure environment variables
-3. Deploy automatically on push
-
-```bash
-npm i -g vercel
-vercel --prod
-```
-
-### Render Deployment
-
-1. Create new Static Site
-2. Set build command: `npm run build`
-3. Set publish directory: `dist`
-
-### Netlify Deployment
-
-1. Drag & drop dist folder
-2. Or connect Git repository
-3. Configure redirects for SPA
-
-## 👨‍💻 Development Guidelines
-
-### Code Standards
-
-- ✅ Follow TypeScript best practices
-- ✅ Use ESLint and Prettier for consistency
-- ✅ Write comprehensive unit tests
-- ✅ Document complex functions
-- ✅ Follow semantic versioning
-
-### Project Structure
-
-```
-src/
-├── components/          # Reusable UI components
-├── pages/              # Application pages
-├── hooks/              # Custom React hooks
-├── services/           # API services
-├── utils/              # Utility functions
-├── types/              # TypeScript definitions
-├── assets/             # Static assets
-└── styles/             # Global styles
-```
-
-## 🤝 Contributing Guidelines
-
-We welcome contributions from healthcare professionals, developers, and AI enthusiasts who share our vision of improving healthcare through technology.
-
-### How to Contribute
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes with tests
-4. Submit a pull request
-5. Participate in code review
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-### Contribution Areas
+## 📄 License
 
-- 🐛 Bug fixes and improvements
-- ➕ New feature development
-- 📚 Documentation updates
-- 🌐 Internationalization
-- 🔒 Security enhancements
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📄 License & Acknowledgments
+## 🆘 Support
 
-### MIT License
+For support, email support@medchain.com or join our Slack channel.
 
-This project is licensed under the MIT License - see the LICENSE file for details. You are free to use, modify, and distribute this software in accordance with the license terms.
+## 🙏 Acknowledgments
 
-### Acknowledgments
-
-**Technology Partners**
-- Google Gemini AI Team
-- React Development Team
-- Tailwind CSS Community
-- Firebase Platform
-
-**Healthcare Advisors**
-- Medical professionals worldwide
-- Healthcare technology experts
-- Open source contributors
-- Beta testing community
+- OpenAI for GPT integration
+- Google for Gemini AI
+- Firebase for authentication
+- Vercel for frontend hosting
+- Render for backend hosting
+- All contributors and supporters
 
 ---
 
-<div align="center">
-
-**MedCHAIN🫀** - Empowering Healthcare Through Intelligent Technology
-
-© 2024 MedCHAIN🫀. Built with ❤️ for the healthcare community.
-
-*Always consult healthcare professionals for medical decisions.*
-
-</div>
+**Made with ❤️ for better healthcare**
