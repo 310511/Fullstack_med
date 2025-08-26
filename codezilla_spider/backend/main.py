@@ -35,6 +35,14 @@ from services.purchase_order_service import purchase_order_service, PurchaseOrde
 # Import OpenAI service
 from services.openai_service import openai_medicine_service
 
+# Import GeneChain Blockchain API
+try:
+    from gene_chain_blockchain_api import router as genechain_router
+    GENECHAIN_AVAILABLE = True
+except ImportError:
+    print("Warning: GeneChain blockchain API not available")
+    GENECHAIN_AVAILABLE = False
+
 app = FastAPI(title="Infinite Memory API - Improved", version="2.0.0")
 
 # Add CORS middleware
@@ -45,6 +53,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include GeneChain Blockchain API router
+if GENECHAIN_AVAILABLE:
+    app.include_router(genechain_router)
+    print("✅ GeneChain Blockchain API loaded successfully")
+else:
+    print("⚠️ GeneChain Blockchain API not loaded")
 
 # Global data storage
 memory_data = {}

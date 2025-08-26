@@ -32,6 +32,11 @@ aiohttp>=3.9.1
 requests>=2.31.0
 websockets>=12.0
 
+# Blockchain dependencies for GeneChain
+web3>=6.0.0
+eth-account>=0.9.0
+ipfshttpclient>=0.8.0
+
 # Removed problematic audio dependencies for cloud deployment:
 # - webrtcvad (requires system audio libraries)
 # - sounddevice (requires system audio libraries) 
