@@ -2,24 +2,8 @@ services:
   - type: web
     name: fullstack-med-backend
     env: python
-    buildCommand: |
-      echo "Current directory: $(pwd)"
-      echo "Listing files:"
-      ls -la
-      echo "Listing codezilla_spider directory:"
-      ls -la codezilla_spider/
-      echo "Listing backend directory:"
-      ls -la codezilla_spider/backend/
-      echo "Installing requirements..."
-      pip install --upgrade pip
-      pip install -r codezilla_spider/backend/requirements.txt
-    startCommand: |
-      echo "Starting backend service..."
-      cd codezilla_spider/backend
-      echo "Current directory: $(pwd)"
-      echo "Listing files in backend:"
-      ls -la
-      python -m uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+    buildCommand: pip install -r codezilla_spider/backend/requirements.txt
+    startCommand: cd codezilla_spider/backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
