@@ -321,3 +321,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 6. **Generate report** in the Report tab
 
 **Experience the future of genetic analysis with immutable blockchain audit trails!** 🧬🔗
+
+

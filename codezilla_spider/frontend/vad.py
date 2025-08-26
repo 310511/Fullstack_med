@@ -24,17 +24,11 @@ def suppress_stderr():
         finally:
             sys.stderr = old_stderr
 
-# Try to import pyaudio with error suppression
-try:
-    with suppress_stderr():
-        import pyaudio
-    PYAUDIO_AVAILABLE = True
-    logger.info("PyAudio successfully imported")
-except Exception as e:
-    PYAUDIO_AVAILABLE = False
-    logger.warning(f"PyAudio not available or failed to import: {e}")
+# PyAudio is not available in cloud environments
+PYAUDIO_AVAILABLE = False
+logger.warning("PyAudio not available in cloud environment - using Web Audio API instead")
 
-FORMAT = pyaudio.paInt16 if PYAUDIO_AVAILABLE else None
+FORMAT = None
 CHANNELS = 1
 SAMPLE_RATE = 16000
 CHUNK = 512  # VAD model expects exactly 512 samples for 16000 Hz
@@ -71,17 +65,9 @@ def initialize_vad():
             print(f"Error loading VAD model: {e}")
             return False
 
-    if PYAUDIO_AVAILABLE and audio is None:
-        try:
-            with suppress_stderr():
-                audio = pyaudio.PyAudio()
-            with suppress_stderr():
-                if audio.get_default_input_device_info():
-                    print("Default input device found.")
-        except Exception as e:
-            print(f"Could not initialize PyAudio, voice recording disabled: {e}")
-            audio = None
-            return False
+    # PyAudio not available in cloud environment
+    audio = None
+    logger.info("Using Web Audio API for voice recording")
             
     return True
 

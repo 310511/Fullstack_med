@@ -32,7 +32,10 @@ import {
   DollarSign,
   Heart,
   ShoppingCart,
-  Eye
+  Eye,
+  Brain,
+  Disc3,
+  Plane
 } from "lucide-react";
 
 const Index = () => {
@@ -49,7 +52,7 @@ const Index = () => {
   }, []);
 
   const handleGetStarted = () => {
-    toast.success("Welcome to MedChain! Redirecting to dashboard...");
+    toast.success("Welcome to VitalSync HealthHub! Redirecting to dashboard...");
     setTimeout(() => {
       navigate('/dashboard');
     }, 1000);
@@ -125,19 +128,19 @@ const Index = () => {
               <div className="space-y-4">
                 <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 px-4 py-2 text-sm font-medium animate-pulse hover-scale">
                   <Sparkles className="w-4 h-4 mr-2 animate-bounce-gentle" />
-                  Next-Generation Healthcare
+                  AI-Powered Health & Wellness Platform
                 </Badge>
                 <h1 className="text-5xl lg:text-7xl font-bold">
                   <span className="gradient-text-animate">
-                    Blockchain-Powered
+                    VitalSync
                   </span>
                   <span className="block text-4xl lg:text-6xl font-bold text-gray-800 dark:text-gray-200 mt-2 animate-slide-in-up">
-                    Medical Inventory
+                    HealthHub
                   </span>
                 </h1>
                 <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-2xl">
-                  Secure, transparent, and automated inventory management for healthcare facilities. 
-                  Every transaction recorded on the blockchain for complete audit trails.
+                  Your comprehensive health and wellness ecosystem. From blockchain-secured medical inventory to AI-powered mental health tracking, 
+                  fitness analytics, and personalized wellness recommendations - all in one unified platform.
                 </p>
               </div>
               
@@ -155,15 +158,19 @@ const Index = () => {
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-3 px-4 py-2 bg-green-100 text-green-700 rounded-full border border-green-200 hover-lift interactive-card glass">
                   <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium">Blockchain Connected</span>
+                  <span className="text-sm font-medium">AI-Powered Health</span>
                 </div>
                 <div className="flex items-center gap-3 px-4 py-2 bg-blue-100 text-blue-700 rounded-full border border-blue-200 hover-lift interactive-card glass">
-                  <Package className="w-4 h-4 animate-bounce-gentle" />
-                  <span className="text-sm font-medium">1,247 Items Tracked</span>
+                  <Heart className="w-4 h-4 animate-bounce-gentle" />
+                  <span className="text-sm font-medium">Mental Wellness</span>
                 </div>
                 <div className="flex items-center gap-3 px-4 py-2 bg-purple-100 text-purple-700 rounded-full border border-purple-200 hover-lift interactive-card glass">
+                  <Activity className="w-4 h-4 animate-bounce-gentle" />
+                  <span className="text-sm font-medium">Fitness Tracking</span>
+                </div>
+                <div className="flex items-center gap-3 px-4 py-2 bg-orange-100 text-orange-700 rounded-full border border-orange-200 hover-lift interactive-card glass">
                   <Shield className="w-4 h-4 animate-bounce-gentle" />
-                  <span className="text-sm font-medium">100% Secure</span>
+                  <span className="text-sm font-medium">Blockchain Secure</span>
                 </div>
               </div>
 
@@ -188,8 +195,8 @@ const Index = () => {
                       <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto backdrop-blur-sm animate-pulse-glow">
                         <Heart className="w-8 h-8 text-white fill-current" />
                       </div>
-                      <h3 className="text-lg font-bold mb-2">Life Pulse</h3>
-                      <p className="text-sm opacity-90">Healthcare Connected</p>
+                                             <h3 className="text-lg font-bold mb-2">VitalSync</h3>
+                      <p className="text-sm opacity-90">Wellness Connected</p>
                     </div>
                   </div>
                   
@@ -306,35 +313,43 @@ const Index = () => {
                 <div className="flex flex-wrap justify-center gap-4">
                   <Button 
                     variant="outline"
-                    onClick={handleListInventory}
-                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover-lift hover-glow group"
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2 group-hover:animate-bounce-gentle" />
-                    View Inventory
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={handleViewAnalytics}
+                    onClick={() => navigate('/mental-health')}
                     className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-300 hover-lift hover-glow group"
                   >
-                    <Eye className="w-4 h-4 mr-2 group-hover:animate-bounce-gentle" />
-                    View Analytics
+                    <Brain className="w-4 h-4 mr-2 group-hover:animate-bounce-gentle" />
+                    Mental Health
                   </Button>
                   <Button 
                     variant="outline"
-                    onClick={handleRFIDScanner}
+                    onClick={() => navigate('/fitness-dashboard')}
                     className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-300 hover-lift hover-glow group"
                   >
                     <Activity className="w-4 h-4 mr-2 group-hover:animate-bounce-gentle" />
-                    RFID Scanner
+                    Fitness Dashboard
                   </Button>
                   <Button 
                     variant="outline"
-                    onClick={handleAIAssistant}
+                    onClick={() => navigate('/drone-delivery')}
+                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover-lift hover-glow group"
+                  >
+                    <Plane className="w-4 h-4 mr-2 group-hover:animate-bounce-gentle" />
+                    Drone Delivery
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate('/spotify-integration')}
+                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-300 hover-lift hover-glow group"
+                  >
+                    <Disc3 className="w-4 h-4 mr-2 group-hover:animate-bounce-gentle" />
+                    Music Therapy
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate('/ai-wellness-planner')}
                     className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-pink-200 dark:border-pink-800 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-all duration-300 hover-lift hover-glow group"
                   >
-                    <Heart className="w-4 h-4 mr-2 group-hover:animate-bounce-gentle" />
-                    AI Assistant
+                    <Target className="w-4 h-4 mr-2 group-hover:animate-bounce-gentle" />
+                    AI Wellness
                   </Button>
                 </div>
               </div>
@@ -347,33 +362,39 @@ const Index = () => {
                 color: "from-blue-500 to-blue-600"
               },
               {
-                icon: Zap,
-                title: "Real-time Alerts",
-                description: "Instant notifications for low stock, expiring items, and critical inventory levels.",
+                icon: Plane,
+                title: "Drone Delivery",
+                description: "AI-powered medical supply delivery with real-time tracking, 3D visualization, and automated fleet management.",
+                color: "from-cyan-500 to-cyan-600"
+              },
+              {
+                icon: Heart,
+                title: "Mental Wellness",
+                description: "AI-powered mental health tracking, mood analysis, and personalized wellness recommendations.",
                 color: "from-purple-500 to-purple-600"
               },
               {
-                icon: TrendingUp,
-                title: "Smart Analytics",
-                description: "AI-powered insights and predictive analytics to optimize inventory management.",
+                icon: Activity,
+                title: "Fitness Analytics",
+                description: "Comprehensive fitness tracking, BMI analysis, and AI-powered workout recommendations.",
                 color: "from-green-500 to-green-600"
               },
               {
-                icon: Users,
-                title: "Multi-role Access",
-                description: "Role-based access control for administrators, managers, staff, and suppliers.",
+                icon: Brain,
+                title: "AI Health Assistant",
+                description: "Intelligent health diagnostics, disease prediction, and personalized care recommendations.",
                 color: "from-orange-500 to-orange-600"
               },
               {
-                icon: Globe,
-                title: "Global Compliance",
-                description: "Meet international healthcare standards and regulatory requirements.",
+                icon: Disc3,
+                title: "Music Therapy",
+                description: "Mood-based music recommendations and therapeutic playlists for mental wellness.",
                 color: "from-indigo-500 to-indigo-600"
               },
               {
-                icon: Award,
-                title: "Proven Excellence",
-                description: "Trusted by leading healthcare facilities worldwide for reliable inventory management.",
+                icon: Target,
+                title: "Wellness Planning",
+                description: "AI-powered diet plans, workout routines, and comprehensive health goal tracking.",
                 color: "from-pink-500 to-pink-600"
               }
             ].map((feature, index) => (

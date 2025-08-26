@@ -447,3 +447,5 @@ export const DiseaseDiagnosisModel: React.FC = () => {
     </div>
   );
 };
+
+

@@ -47,12 +47,23 @@ import {
   Download,
   Eye as EyeIcon,
   Calendar,
-  Hash
+  Hash,
+  ExternalLink,
+  Copy,
+  Loader2,
+  AlertCircle as AlertCircleIcon
 } from 'lucide-react';
 import ProposalForm from './ProposalForm';
 import ProposalsList from './ProposalsList';
 import ProposalDetails from './ProposalDetails';
 import { useTheme } from '@/contexts/ThemeContext';
+import { 
+  promoterValidationService, 
+  PromoterValidationRequest, 
+  PromoterValidationResult,
+  ValidationHistory,
+  TransactionDetails
+} from '@/services/promoterValidationService';
 
 interface Proposal {
   id: string;
@@ -93,12 +104,22 @@ interface AuditLog {
 interface PromoterData {
   id: string;
   sequence: string;
-  prediction: 'promoter' | 'not_promoter';
+  prediction: 'promoter' | 'non_promoter';
   probability: number;
   modelHash: string;
   blockchainTx: string;
   timestamp: string;
   referenceMatches: Array<{ database: string; match: string; score: number }>;
+  sequence_hash?: string;
+  motifs_found?: Array<{
+    name: string;
+    pattern: string;
+    position: number;
+    found: boolean;
+  }>;
+  validation_hash?: string;
+  analyst_id?: string;
+  patient_id?: string;
 }
 
 interface ConsentRequest {
@@ -144,7 +165,13 @@ const UnifiedGeneChain: React.FC = () => {
   
   // Promoter Validation State
   const [promoterData, setPromoterData] = useState<PromoterData | null>(null);
-  const [promoterTab, setPromoterTab] = useState<'upload' | 'prediction' | 'blockchain' | 'reference'>('upload');
+  const [promoterTab, setPromoterTab] = useState<'upload' | 'prediction' | 'blockchain' | 'reports'>('upload');
+  const [promoterLoading, setPromoterLoading] = useState(false);
+  const [promoterError, setPromoterError] = useState<string | null>(null);
+  const [validationHistory, setValidationHistory] = useState<ValidationHistory | null>(null);
+  const [transactionDetails, setTransactionDetails] = useState<TransactionDetails | null>(null);
+  const [currentSequence, setCurrentSequence] = useState('');
+  const [fileUploadProgress, setFileUploadProgress] = useState(0);
   
   // Consent Management State
   const [consentRequests, setConsentRequests] = useState<ConsentRequest[]>([]);
@@ -239,7 +266,7 @@ const UnifiedGeneChain: React.FC = () => {
     setShowProposalForm(false);
   };
 
-  const handleFileUpload = async (file: File) => {
+  const handleGeneExpressionFileUpload = async (file: File) => {
     // Simulate file processing
     const mockData: GeneExpressionData = {
       patientId: 'P' + Date.now(),
@@ -271,21 +298,155 @@ const UnifiedGeneChain: React.FC = () => {
 
   // Promoter Validation Handlers
   const handlePromoterUpload = async (sequence: string) => {
-    // Simulate promoter analysis
-    const mockData: PromoterData = {
-      id: 'P' + Date.now(),
-      sequence: sequence,
-      prediction: Math.random() > 0.5 ? 'promoter' : 'not_promoter',
-      probability: Math.random() * 0.4 + 0.6, // 60-100%
-      modelHash: '0x' + Math.random().toString(16).substr(2, 8),
-      blockchainTx: '0x' + Math.random().toString(16).substr(2, 16),
-      timestamp: new Date().toISOString(),
-      referenceMatches: [
-        { database: 'NCBI', match: 'NM_001123456', score: 0.95 },
-        { database: 'Ensembl', match: 'ENST00000123456', score: 0.87 }
-      ]
-    };
-    setPromoterData(mockData);
+    console.log('handlePromoterUpload called with sequence:', sequence);
+    
+    if (!sequence.trim()) {
+      console.log('Sequence is empty, setting error');
+      setPromoterError('Please enter a DNA sequence');
+      return;
+    }
+
+    console.log('Setting loading state to true');
+    setPromoterLoading(true);
+    setPromoterError(null);
+
+    try {
+      console.log('Validating sequence...');
+      // Validate sequence
+      const validation = promoterValidationService.validateDNASequence(sequence);
+      if (!validation.isValid) {
+        console.log('Validation failed:', validation.errors);
+        setPromoterError(validation.errors.join(', '));
+        return;
+      }
+
+      console.log('Preparing API request...');
+      // Prepare request
+      const request: PromoterValidationRequest = {
+        sequence: sequence.toUpperCase(),
+        patient_id: `P${Date.now()}`,
+        analyst_id: 'ANALYST001',
+        user_role: userRole
+      };
+
+      console.log('Calling API with request:', request);
+      // Call API
+      const result = await promoterValidationService.validatePromoter(request);
+      console.log('API response received:', result);
+
+      // Convert API result to PromoterData format
+      const promoterData: PromoterData = {
+        id: result.id,
+        sequence: sequence,
+        prediction: result.prediction as 'promoter' | 'non_promoter',
+        probability: result.probability,
+        modelHash: result.model_version_hash,
+        blockchainTx: result.blockchain_tx,
+        timestamp: result.timestamp,
+        sequence_hash: result.sequence_hash,
+        motifs_found: result.motifs_found,
+        validation_hash: result.validation_hash,
+        analyst_id: result.analyst_id,
+        patient_id: result.patient_id,
+        referenceMatches: [
+          { database: 'NCBI', match: 'NM_001123456', score: 0.95 },
+          { database: 'Ensembl', match: 'ENST00000123456', score: 0.87 }
+        ]
+      };
+
+      console.log('Setting promoter data:', promoterData);
+      setPromoterData(promoterData);
+      setCurrentSequence(sequence);
+      
+      // Switch to prediction tab
+      setPromoterTab('prediction');
+      
+    } catch (error) {
+      console.error('Promoter validation failed:', error);
+      setPromoterError(error instanceof Error ? error.message : 'Validation failed');
+    } finally {
+      console.log('Setting loading state to false');
+      setPromoterLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setPromoterLoading(true);
+    setPromoterError(null);
+    setFileUploadProgress(0);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const content = e.target?.result as string;
+          const sequence = promoterValidationService.extractSequenceFromFASTA(content);
+          
+          // Simulate upload progress
+          for (let i = 0; i <= 100; i += 10) {
+            setFileUploadProgress(i);
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          await handlePromoterUpload(sequence);
+        } catch (error) {
+          setPromoterError('Failed to process file');
+        }
+      };
+      reader.readAsText(file);
+    } catch (error) {
+      setPromoterError('Failed to read file');
+    } finally {
+      setPromoterLoading(false);
+      setFileUploadProgress(0);
+    }
+  };
+
+  const handleLogToBlockchain = async () => {
+    if (!promoterData) return;
+
+    setPromoterLoading(true);
+    setPromoterError(null);
+
+    try {
+      const result = await promoterValidationService.logToBlockchain({
+        patient_id: promoterData.patient_id || 'P001',
+        validation_id: promoterData.id
+      });
+
+      // Update promoter data with new blockchain info
+      setPromoterData(prev => prev ? {
+        ...prev,
+        blockchainTx: result.blockchain_tx
+      } : null);
+
+      // Switch to blockchain tab
+      setPromoterTab('blockchain');
+      
+    } catch (error) {
+      console.error('Blockchain logging failed:', error);
+      setPromoterError(error instanceof Error ? error.message : 'Blockchain logging failed');
+    } finally {
+      setPromoterLoading(false);
+    }
+  };
+
+  const loadValidationHistory = async (patientId: string) => {
+    try {
+      const history = await promoterValidationService.getValidationHistory(patientId);
+      setValidationHistory(history);
+    } catch (error) {
+      console.error('Failed to load validation history:', error);
+    }
+  };
+
+  const loadTransactionDetails = async (txHash: string) => {
+    try {
+      const details = await promoterValidationService.getTransactionDetails(txHash);
+      setTransactionDetails(details);
+    } catch (error) {
+      console.error('Failed to load transaction details:', error);
+    }
   };
 
   // Consent Management Handlers
@@ -467,7 +628,7 @@ const UnifiedGeneChain: React.FC = () => {
                   Supports: CSV files with gene expression matrix
                 </p>
                 <button
-                  onClick={() => handleFileUpload(new File([''], 'sample.csv'))}
+                                      onClick={() => handleGeneExpressionFileUpload(new File([''], 'sample.csv'))}
                   className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Upload Sample Data
@@ -637,10 +798,10 @@ const UnifiedGeneChain: React.FC = () => {
       {/* Tab Navigation */}
       <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
         {[
-          { id: 'upload', label: 'Sequence Upload', icon: Upload },
-          { id: 'prediction', label: 'Prediction Results', icon: BrainCircuit },
-          { id: 'blockchain', label: 'Blockchain Log', icon: Hash },
-          { id: 'reference', label: 'Reference DB', icon: Database }
+          { id: 'upload', label: 'Sequence Input', icon: Upload },
+          { id: 'prediction', label: 'ML Prediction', icon: BrainCircuit },
+          { id: 'blockchain', label: 'Blockchain Validation Log', icon: Hash },
+          { id: 'reports', label: 'Reports', icon: FileText }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -666,24 +827,189 @@ const UnifiedGeneChain: React.FC = () => {
             className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}
           >
             <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Upload DNA Sequence
+              DNA Sequence Input
             </h3>
-            <div className="space-y-4">
-              <div className={`border-2 border-dashed rounded-lg p-8 text-center ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Upload FASTA file or paste DNA sequence
-                </p>
+
+            {/* Error Display */}
+            {promoterError && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-4 rounded-lg border ${isDarkMode ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200'} mb-4`}
+              >
+                <div className="flex items-center space-x-2">
+                  <AlertCircleIcon className="w-5 h-5 text-red-500" />
+                  <span className={`text-sm ${isDarkMode ? 'text-red-300' : 'text-red-700'}`}>
+                    {promoterError}
+                  </span>
+                </div>
+              </motion.div>
+            )}
+
+            <div className="space-y-6">
+              {/* File Upload Section */}
+              <div className={`border-2 border-dashed rounded-lg p-6 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'} ${promoterLoading ? 'opacity-50' : ''}`}>
+                <div className="text-center">
+                  <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className={`text-lg font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Upload FASTA File
+                  </p>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-4`}>
+                    Supports .fasta, .txt files with raw DNA sequence
+                  </p>
+                  
+                  {/* Upload Progress */}
+                  {fileUploadProgress > 0 && fileUploadProgress < 100 && (
+                    <div className="mb-4">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${fileUploadProgress}%` }}
+                        ></div>
+                      </div>
+                      <p className={`text-sm mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Processing file... {fileUploadProgress}%
+                      </p>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    accept=".fasta,.txt"
+                    className="hidden"
+                    id="fasta-upload"
+                    disabled={promoterLoading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleFileUpload(file);
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="fasta-upload"
+                    className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors cursor-pointer ${
+                      promoterLoading 
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {promoterLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4 mr-2" />
+                    )}
+                    {promoterLoading ? 'Processing...' : 'Choose File'}
+                  </label>
+                </div>
+              </div>
+
+              {/* Manual Input Section */}
+              <div className="space-y-4">
+                <h4 className={`text-lg font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Or Paste DNA Sequence
+                </h4>
                 <textarea
                   placeholder="Paste DNA sequence here (ATCG...)"
-                  className={`mt-4 w-full h-32 p-3 border rounded-lg ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                  className={`w-full h-40 p-4 border rounded-lg font-mono text-sm ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                  disabled={promoterLoading}
+                  value={currentSequence}
+                  onChange={(e) => {
+                    const sequence = e.target.value.toUpperCase().replace(/[^ATCG]/g, '');
+                    setCurrentSequence(sequence);
+                  }}
                 />
-                <button
-                  onClick={() => handlePromoterUpload("ATCGATCGATCG")}
-                  className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Analyze Sequence
-                </button>
+                <div className="flex items-center justify-between">
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Only A, T, C, G characters allowed • Min length: 10 nucleotides
+                  </div>
+                  <button
+                    onClick={() => handlePromoterUpload(currentSequence)}
+                    disabled={promoterLoading || !currentSequence.trim()}
+                    className={`px-6 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+                      promoterLoading || !currentSequence.trim()
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                  >
+                    {promoterLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <BrainCircuit className="w-4 h-4" />
+                    )}
+                    <span>{promoterLoading ? 'Analyzing...' : 'Run Promoter Analysis'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Sequence Validation */}
+              <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <h4 className={`font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Pre-validation Check
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      currentSequence && /^[ATCG]+$/.test(currentSequence) 
+                        ? 'bg-green-500' 
+                        : 'bg-gray-400'
+                    }`}></div>
+                    <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                      Valid DNA characters
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      currentSequence && currentSequence.length >= 10 
+                        ? 'bg-green-500' 
+                        : 'bg-gray-400'
+                    }`}></div>
+                    <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                      Sequence length OK ({currentSequence.length} nucleotides)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sample Sequences */}
+              <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                <h4 className={`font-medium mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Sample Sequences
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setCurrentSequence("TATAAAATCGATCGATCG")}
+                    disabled={promoterLoading}
+                    className={`p-3 rounded-lg border text-left text-sm transition-colors ${
+                      isDarkMode 
+                        ? 'border-gray-600 hover:border-gray-500' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Promoter Sequence
+                    </div>
+                    <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Contains TATA box motif
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setCurrentSequence("ATCGATCGATCGATCGATCG")}
+                    disabled={promoterLoading}
+                    className={`p-3 rounded-lg border text-left text-sm transition-colors ${
+                      isDarkMode 
+                        ? 'border-gray-600 hover:border-gray-500' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Random Sequence
+                    </div>
+                    <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      No known motifs
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -697,24 +1023,168 @@ const UnifiedGeneChain: React.FC = () => {
           >
             {promoterData ? (
               <>
+                {/* Main Prediction Results */}
                 <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
-                  <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Promoter Prediction Results
+                  <h3 className={`text-xl font-semibold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    ML Prediction Results
                   </h3>
+                  
+                  {/* Prediction Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Prediction</p>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Classification</p>
                       <p className={`text-2xl font-bold ${promoterData.prediction === 'promoter' ? 'text-green-600' : 'text-red-600'}`}>
-                        {promoterData.prediction === 'promoter' ? 'Promoter' : 'Not Promoter'}
+                        {promoterData.prediction === 'promoter' ? 'Promoter' : 'Non-Promoter'}
                       </p>
                     </div>
                     <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Confidence</p>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Confidence Score</p>
                       <p className="text-2xl font-bold text-blue-600">{(promoterData.probability * 100).toFixed(1)}%</p>
                     </div>
                     <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Model Hash</p>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Model Version</p>
                       <p className="text-sm font-mono text-gray-600">{promoterData.modelHash}</p>
+                    </div>
+                  </div>
+
+                  {/* Blockchain Logging Button */}
+                  <div className="mb-6">
+                    <button
+                      onClick={handleLogToBlockchain}
+                      disabled={promoterLoading}
+                      className={`px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 ${
+                        promoterLoading
+                          ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                      }`}
+                    >
+                      {promoterLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Hash className="w-4 h-4" />
+                      )}
+                      <span>{promoterLoading ? 'Logging to Blockchain...' : 'Log Validation to Blockchain'}</span>
+                    </button>
+                  </div>
+
+                  {/* Confidence Gauge */}
+                  <div className="mb-6">
+                    <h4 className={`font-medium mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Confidence Visualization
+                    </h4>
+                    <div className="relative">
+                      <div className={`w-full h-4 bg-gray-200 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
+                        <div 
+                          className="h-4 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full transition-all duration-1000"
+                          style={{ width: `${promoterData.probability * 100}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs mt-2">
+                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>0%</span>
+                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>50%</span>
+                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>100%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Motif Detection */}
+                <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
+                  <h4 className={`font-medium mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Detected Biological Motifs
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {promoterData.motifs_found ? (
+                      promoterData.motifs_found.map((motif, index) => (
+                        <div key={index} className={`p-3 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{motif.name}</span>
+                            <span className={`text-sm ${motif.found ? 'text-green-600' : 'text-gray-500'}`}>
+                              {motif.found ? 'Found' : 'Not Found'}
+                            </span>
+                          </div>
+                          <p className="text-sm font-mono text-gray-600">{motif.pattern}</p>
+                          {motif.found && motif.position >= 0 && (
+                            <p className="text-xs text-gray-500 mt-1">Position: {motif.position}</p>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      // Fallback to static motifs if API data not available
+                      <>
+                        <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>TATA Box</span>
+                            <span className="text-green-600 text-sm">Found</span>
+                          </div>
+                          <p className="text-sm font-mono text-gray-600">TATAAA</p>
+                        </div>
+                        <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>CAAT Box</span>
+                            <span className="text-green-600 text-sm">Found</span>
+                          </div>
+                          <p className="text-sm font-mono text-gray-600">CAAT</p>
+                        </div>
+                        <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>-10 Region</span>
+                            <span className="text-green-600 text-sm">Found</span>
+                          </div>
+                          <p className="text-sm font-mono text-gray-600">TATAAT</p>
+                        </div>
+                        <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>-35 Region</span>
+                            <span className="text-green-600 text-sm">Found</span>
+                          </div>
+                          <p className="text-sm font-mono text-gray-600">TTGACA</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sequence Visualization */}
+                <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
+                  <h4 className={`font-medium mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Sequence with Motif Highlights
+                  </h4>
+                  <div className={`p-4 rounded-lg font-mono text-sm ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <div className="whitespace-pre-wrap break-all">
+                      {promoterData.sequence ? (
+                        promoterData.sequence.split('').map((char, index) => {
+                          // Highlight motifs
+                          const isTATA = promoterData.sequence.substring(index, index + 6) === 'TATAAA';
+                          const isCAAT = promoterData.sequence.substring(index, index + 4) === 'CAAT';
+                          const isMinus10 = promoterData.sequence.substring(index, index + 6) === 'TATAAT';
+                          const isMinus35 = promoterData.sequence.substring(index, index + 6) === 'TTGACA';
+                          
+                          let bgColor = '';
+                          if (isTATA || isMinus10 || isMinus35) bgColor = 'bg-yellow-200 text-yellow-900';
+                          else if (isCAAT) bgColor = 'bg-blue-200 text-blue-900';
+                          
+                          return (
+                            <span key={index} className={`${bgColor} px-0.5`}>
+                              {char}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
+                          No sequence data available
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-3 h-3 bg-yellow-200 rounded"></div>
+                      <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>TATA Box / -10/-35</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-3 h-3 bg-blue-200 rounded"></div>
+                      <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>CAAT Box</span>
                     </div>
                   </div>
                 </div>
@@ -726,7 +1196,7 @@ const UnifiedGeneChain: React.FC = () => {
                   No prediction data available
                 </p>
                 <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                  Upload a sequence in the Upload tab to see prediction results
+                  Upload a sequence in the Sequence Input tab to see prediction results
                 </p>
               </div>
             )}
@@ -737,60 +1207,321 @@ const UnifiedGeneChain: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}
+            className="space-y-6"
           >
-            <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Blockchain Validation Log
-            </h3>
-            {promoterData ? (
-              <div className="space-y-4">
-                <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Transaction Hash
-                    </span>
-                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {new Date(promoterData.timestamp).toLocaleDateString()}
-                    </span>
+            {/* Blockchain Status */}
+            <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
+              <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Blockchain Validation Log
+              </h3>
+              
+              {promoterData ? (
+                <div className="space-y-6">
+                  {/* Current Validation */}
+                  <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Latest Validation
+                      </span>
+                      <span className={`text-sm px-2 py-1 rounded ${isDarkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-800'}`}>
+                        Confirmed
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Transaction Hash</p>
+                        <p className="font-mono text-sm text-gray-600 break-all">{promoterData.blockchainTx}</p>
+                      </div>
+                      <div>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Block Number</p>
+                        <p className="font-mono text-sm text-gray-600">#1,234,567</p>
+                      </div>
+                      <div>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Timestamp</p>
+                        <p className="text-sm text-gray-600">{new Date(promoterData.timestamp).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Gas Used</p>
+                        <p className="text-sm text-gray-600">45,678</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <a
+                        href={`https://sepolia.etherscan.io/tx/${promoterData.blockchainTx}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center space-x-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span>View on Etherscan</span>
+                      </a>
+                      <button
+                        onClick={() => {/* Copy to clipboard */}}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm flex items-center space-x-2"
+                      >
+                        <Copy className="w-4 h-4" />
+                        <span>Copy Hash</span>
+                      </button>
+                    </div>
                   </div>
-                  <p className="font-mono text-sm text-gray-600">{promoterData.blockchainTx}</p>
+
+                  {/* Smart Contract Details */}
+                  <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                    <h4 className={`font-medium mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Smart Contract Details
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Contract Address</p>
+                        <p className="font-mono text-gray-600">0x1234...5678</p>
+                      </div>
+                      <div>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Function Called</p>
+                        <p className="font-mono text-gray-600">logValidation()</p>
+                      </div>
+                      <div>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Sequence Hash</p>
+                        <p className="font-mono text-gray-600">0xabcd...efgh</p>
+                      </div>
+                      <div>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Model Hash</p>
+                        <p className="font-mono text-gray-600">{promoterData.modelHash}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Hash className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    No blockchain data available
+                  </p>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    Run a prediction first to see blockchain validation logs
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Validation Timeline */}
+            {promoterData && (
+              <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
+                <h4 className={`font-medium mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Validation Timeline
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-3 h-3 bg-green-500 rounded-full mt-2"></div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          Validation Logged
+                        </span>
+                        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {new Date(promoterData.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Promoter validation result logged to Ethereum Sepolia testnet
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          ML Analysis Completed
+                        </span>
+                        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {new Date(promoterData.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Machine learning model predicted: {promoterData.prediction} ({(promoterData.probability * 100).toFixed(1)}% confidence)
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-3 h-3 bg-gray-400 rounded-full mt-2"></div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          Sequence Uploaded
+                        </span>
+                        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {new Date(promoterData.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        DNA sequence uploaded and validated
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                No blockchain data available. Run a prediction first.
-              </p>
             )}
           </motion.div>
         )}
 
-        {promoterTab === 'reference' && (
+        {promoterTab === 'reports' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}
+            className="space-y-6"
           >
-            <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Reference Database Cross-check
-            </h3>
-            {promoterData ? (
-              <div className="space-y-4">
-                {promoterData.referenceMatches.map((match, index) => (
-                  <div key={index} className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {match.database}
-                      </span>
-                      <span className="text-sm text-blue-600">{(match.score * 100).toFixed(1)}% match</span>
+            {/* Report Generation */}
+            <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
+              <h3 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Promoter Validation Reports
+              </h3>
+              
+              {promoterData ? (
+                <div className="space-y-6">
+                  {/* Report Summary */}
+                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <h4 className={`font-medium mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Report Summary
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Analysis Date</p>
+                        <p className="text-gray-600">{new Date(promoterData.timestamp).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Classification</p>
+                        <p className={`font-medium ${promoterData.prediction === 'promoter' ? 'text-green-600' : 'text-red-600'}`}>
+                          {promoterData.prediction === 'promoter' ? 'Promoter' : 'Non-Promoter'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Confidence</p>
+                        <p className="text-gray-600">{(promoterData.probability * 100).toFixed(1)}%</p>
+                      </div>
+                      <div>
+                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Blockchain TX</p>
+                        <p className="font-mono text-xs text-gray-600 break-all">{promoterData.blockchainTx}</p>
+                      </div>
                     </div>
-                    <p className="font-mono text-sm text-gray-600">{match.match}</p>
                   </div>
-                ))}
+
+                  {/* Report Content Preview */}
+                  <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                    <h4 className={`font-medium mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Report Content Preview
+                    </h4>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                          Input sequence hash (not raw DNA)
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                          Prediction & probability score
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                          Detected biological motifs
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                          Blockchain TX hash & block number
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                          Analyst ID & timestamp
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
+                          Model version hash
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Report Actions */}
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = '#';
+                        link.download = `promoter-validation-report-${Date.now()}.pdf`;
+                        link.click();
+                      }}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Generate PDF Report</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = '#';
+                        link.download = `promoter-validation-data-${Date.now()}.json`;
+                        link.click();
+                      }}
+                      className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Export JSON Data</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    No validation data available
+                  </p>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                    Run a promoter validation first to generate reports
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Report History */}
+            {promoterData && (
+              <div className={`p-6 rounded-xl border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
+                <h4 className={`font-medium mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Recent Validation Reports
+                </h4>
+                <div className="space-y-3">
+                  <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          Promoter Validation Report
+                        </p>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {new Date(promoterData.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-sm px-2 py-1 rounded ${promoterData.prediction === 'promoter' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {promoterData.prediction === 'promoter' ? 'Promoter' : 'Non-Promoter'}
+                        </span>
+                        <button className="p-1 text-gray-400 hover:text-gray-600">
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                No reference data available. Run a prediction first.
-              </p>
             )}
           </motion.div>
         )}

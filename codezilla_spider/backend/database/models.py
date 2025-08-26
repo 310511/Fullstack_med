@@ -76,3 +76,4 @@ class Alert(BaseModel):
     related_item_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     resolved_at: Optional[datetime] = None
+
